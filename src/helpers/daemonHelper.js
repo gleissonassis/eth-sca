@@ -31,7 +31,15 @@ module.exports = function(dependencies) {
       return client.getBalance();
     },
 
-    getBlockCount: function() {
+    estimateGas: function(transaction) {
+      return 0;
+    },
+
+    getGasPrice: function() {
+      return 0;
+    },
+
+    getBlockNumber: function() {
       return client.getBlockCount();
     },
 
@@ -58,13 +66,8 @@ module.exports = function(dependencies) {
       });
     },
 
-    getTransactions: function(firstBlockIndex, blockCount, addresses, paymentId) {
-      return this._main('getTransactions', {
-        firstBlockIndex: firstBlockIndex,
-        blockCount: blockCount,
-        addresses: addresses,
-        paymentId: paymentId
-      });
+    getTransactions: function(from, to) {
+      return null;
     },
 
     getTransaction: function(txid) {

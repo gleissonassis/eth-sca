@@ -23,6 +23,10 @@ module.exports = function(){
         required: true
       }
     },
+    privateKey: {
+      type: String,
+      required: true
+    },
     createdAt: {
       type: Date,
       required: false,

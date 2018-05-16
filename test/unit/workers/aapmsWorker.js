@@ -26,28 +26,6 @@ describe('Workers > AAPMSWorker > ', function() {
     }));
 
   it('run', function() {
-    var getAddresses = sinon.stub(daemonHelper, 'getAddresses');
-    getAddresses
-      .withArgs()
-      .returns(Promise.resolve(['ADDRESS1', 'ADDRESS2']));
-
-    getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-    getByAddressStub
-      .withArgs(null, 'ADDRESS1')
-      .returns(Promise.resolve({
-        address: 'ADDRESS1',
-        ownerId: 'ownerId',
-        id: 'ID'
-      }));
-    getByAddressStub
-      .withArgs(null, 'ADDRESS2')
-      .returns(Promise.resolve(null));
-
-    var registerAddressFromDaemonStub = sinon.stub(addressBO, 'registerAddressFromDaemon');
-    registerAddressFromDaemonStub
-      .withArgs(null, 'ADDRESS2')
-      .returns(Promise.resolve());
-
     var getFreeAddressesStub = sinon.stub(addressBO, 'getFreeAddresses');
     getFreeAddressesStub
       .withArgs()
@@ -60,16 +38,10 @@ describe('Workers > AAPMSWorker > ', function() {
 
     return aapmsWorker.run()
       .then(function() {
-        expect(getAddresses.callCount).to.be.equal(1);
-        expect(getByAddressStub.callCount).to.be.equal(2);
-        expect(registerAddressFromDaemonStub.callCount).to.be.equal(1);
         expect(getByKeyStub.callCount).to.be.equal(1);
         expect(getFreeAddressesStub.callCount).to.be.equal(1);
         expect(createAddressFromDaemonStub.callCount).to.be.equal(7);
 
-        getAddresses.restore();
-        getByAddressStub.restore();
-        registerAddressFromDaemonStub.restore();
         createAddressFromDaemonStub.restore();
         getFreeAddressesStub.restore();
       });

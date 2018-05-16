@@ -4,7 +4,6 @@ var DaemonHelper      = require('../../../src/helpers/daemonHelper');
 var DateHelper        = require('../../../src/helpers/dateHelper');
 var HelperFactory     = require('../../../src/helpers/helperFactory');
 var DAOFactory        = require('../../../src/daos/daoFactory');
-var Decimal           = require('decimal.js');
 var chai              = require('chai');
 var sinon             = require('sinon');
 var expect            = chai.expect;
@@ -81,6 +80,7 @@ describe('Business > AddressBO > ', function() {
         .withArgs({
           ownerId: null,
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           isEnabled: true,
           balance: {
@@ -92,6 +92,7 @@ describe('Business > AddressBO > ', function() {
           _id: 'ID',
           ownerId: null,
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           isEnabled: true,
           balance: {
@@ -100,13 +101,14 @@ describe('Business > AddressBO > ', function() {
           }
         });
 
-      return addressBO.registerAddressFromDaemon(null, 'address')
+      return addressBO.registerAddressFromDaemon(null, {address: 'address', privateKey: 'privateKey'})
         .then(function(r){
           console.log(r);
           expect(r).to.be.deep.equal({
             id: 'ID',
             ownerId: null,
             address: 'address',
+            privateKey: 'privateKey',
             createdAt: now,
             isEnabled: true,
             balance: {
@@ -120,305 +122,14 @@ describe('Business > AddressBO > ', function() {
         });
     });
 
-    it('deposit in locked balance', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      lockStub = sinon.stub(mutexHelper, 'lock');
-      lockStub.withArgs('address').returns(Promise.resolve(function(){}));
-
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
-      getAllStub
-        .withArgs({address: 'address', isEnabled: true})
-        .returns(Promise.resolve([{
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 1
-          },
-          id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        }]));
-
-      var updateStub = sinon.stub(addressDAO, 'update');
-      updateStub
-        .withArgs()
-        .returns({
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 11
-          },
-          _id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        });
-
-      return addressBO.deposit('address', 10, 1)
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            ownerId: null,
-            address: 'address',
-            createdAt: now,
-            updatedAt: now,
-            isEnabled: true,
-            balance: {
-              available: 10,
-              locked: 11
-            }
-          });
-
-          lockStub.restore();
-          getNowStub.restore();
-          getAllStub.restore();
-          updateStub.restore();
-        });
-    });
-
-    it('should withdraw in locked balance', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      lockStub = sinon.stub(mutexHelper, 'lock');
-      lockStub.withArgs('address').returns(Promise.resolve(function(){}));
-
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
-      getAllStub
-        .withArgs({address: 'address', isEnabled: true})
-        .returns(Promise.resolve([{
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 1
-          },
-          id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        }]));
-
-      var updateStub = sinon.stub(addressDAO, 'update');
-      updateStub
-        .withArgs()
-        .returns({
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 0.5
-          },
-          _id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        });
-
-      return addressBO.withdraw('address', new Decimal(0.5).toFixed(8), 1)
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            ownerId: null,
-            address: 'address',
-            createdAt: now,
-            updatedAt: now,
-            isEnabled: true,
-            balance: {
-              available: 10,
-              locked: 0.5
-            }
-          });
-
-          lockStub.restore();
-          getNowStub.restore();
-          getAllStub.restore();
-          updateStub.restore();
-        });
-    });
-
-    it('deposit in available balance', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      lockStub = sinon.stub(mutexHelper, 'lock');
-      lockStub.withArgs('address').returns(Promise.resolve(function(){}));
-
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
-      getAllStub
-        .withArgs({address: 'address', isEnabled: true})
-        .returns(Promise.resolve([{
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 1
-          },
-          id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        }]));
-
-      var updateStub = sinon.stub(addressDAO, 'update');
-      updateStub
-        .withArgs()
-        .returns({
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 20,
-            locked: 1
-          },
-          _id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        });
-
-      return addressBO.deposit('address', 10, 0)
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            ownerId: null,
-            address: 'address',
-            createdAt: now,
-            updatedAt: now,
-            isEnabled: true,
-            balance: {
-              available: 20,
-              locked: 1
-            }
-          });
-
-          lockStub.restore();
-          getNowStub.restore();
-          getAllStub.restore();
-          updateStub.restore();
-        });
-    });
-
-    it('should withdraw in available balance', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      lockStub = sinon.stub(mutexHelper, 'lock');
-      lockStub.withArgs('address').returns(Promise.resolve(function(){}));
-
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
-      getAllStub
-        .withArgs({address: 'address', isEnabled: true})
-        .returns(Promise.resolve([{
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 1
-          },
-          id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        }]));
-
-      var updateStub = sinon.stub(addressDAO, 'update');
-      updateStub
-        .withArgs()
-        .returns({
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 9.5,
-            locked: 1
-          },
-          _id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        });
-
-      return addressBO.withdraw('address', new Decimal(0.5).toFixed(8), 0)
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            ownerId: null,
-            address: 'address',
-            createdAt: now,
-            updatedAt: now,
-            isEnabled: true,
-            balance: {
-              available: 9.5,
-              locked: 1
-            }
-          });
-
-          lockStub.restore();
-          getNowStub.restore();
-          getAllStub.restore();
-          updateStub.restore();
-        });
-    });
-
-
-
-    it('should failt to withdraw in available balance whitout funds', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      lockStub = sinon.stub(mutexHelper, 'lock');
-      lockStub.withArgs('address').returns(Promise.resolve(function(){}));
-
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
-      getAllStub
-        .withArgs({address: 'address', isEnabled: true})
-        .returns(Promise.resolve([{
-          ownerId: null,
-          address: 'address',
-          balance: {
-            available: 10,
-            locked: 1
-          },
-          id: 'ID',
-          isEnabled: true,
-          createdAt: now,
-          updatedAt: now
-        }]));
-
-      return addressBO.withdraw('address', new Decimal(11).toFixed(8), 0)
-        .catch(function(r){
-          expect(r.error).to.be.equal('INVALID_WALLET_BALANCE');
-
-          lockStub.restore();
-          getNowStub.restore();
-          getAllStub.restore();
-        });
-    });
-
     it('createAddressFromDaemon', function() {
       var createAddressStub = sinon.stub(daemonHelper, 'createAddress');
       createAddressStub
         .withArgs()
-        .returns(Promise.resolve('address'));
+        .returns(Promise.resolve({
+          address: 'address',
+          privateKey: 'privateKey'
+        }));
 
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
@@ -431,6 +142,7 @@ describe('Business > AddressBO > ', function() {
         .withArgs({
           ownerId: null,
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           isEnabled: true,
           balance: {
@@ -442,6 +154,7 @@ describe('Business > AddressBO > ', function() {
           _id: 'ID',
           ownerId: null,
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           isEnabled: true,
           balance: {
@@ -456,6 +169,7 @@ describe('Business > AddressBO > ', function() {
             id: 'ID',
             ownerId: null,
             address: 'address',
+            privateKey: 'privateKey',
             createdAt: now,
             isEnabled: true,
             balance: {
@@ -482,7 +196,10 @@ describe('Business > AddressBO > ', function() {
       var createAddressStub = sinon.stub(daemonHelper, 'createAddress');
       createAddressStub
         .withArgs()
-        .returns(Promise.resolve('address'));
+        .returns(Promise.resolve({
+          address: 'address',
+          privateKey: 'privateKey'
+        }));
 
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
@@ -495,6 +212,7 @@ describe('Business > AddressBO > ', function() {
         .withArgs({
           ownerId: 'ownerId',
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           isEnabled: true,
           balance: {
@@ -506,6 +224,7 @@ describe('Business > AddressBO > ', function() {
           _id: 'ID',
           ownerId: 'ownerId',
           address: 'address',
+          privateKey: 'privateKey',
           createdAt: now,
           updatedAt: now,
           isEnabled: true,
@@ -520,6 +239,7 @@ describe('Business > AddressBO > ', function() {
           .withArgs({
             ownerId: 'ownerId',
             address: 'address',
+            privateKey: 'privateKey',
             createdAt: now,
             updatedAt: now,
             isEnabled: true,
@@ -533,6 +253,7 @@ describe('Business > AddressBO > ', function() {
             _id: 'ID',
             ownerId: 'ownerId',
             address: 'address',
+            privateKey: 'privateKey',
             createdAt: now,
             updatedAt: now,
             isEnabled: true,
@@ -548,6 +269,7 @@ describe('Business > AddressBO > ', function() {
             id: 'ID',
             ownerId: 'ownerId',
             address: 'address',
+            privateKey: 'privateKey',
             createdAt: now,
             updatedAt: now,
             isEnabled: true,
@@ -612,7 +334,6 @@ describe('Business > AddressBO > ', function() {
           expect(deleteAddressStub.callCount).to.be.equal(0);
           expect(disableStub.callCount).to.be.equal(0);
           expect(r.status).to.be.equal(404);
-          expect(r.message).to.be.equal('The address address not found');
 
           getAllStub.restore();
           deleteAddressStub.restore();

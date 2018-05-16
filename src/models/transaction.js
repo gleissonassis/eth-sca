@@ -17,6 +17,14 @@ module.exports = function(){
       type: Number,
       required: true
     },
+    gas: {
+      type: Number,
+      required: true
+    },
+    gasPrice: {
+      type: Number,
+      required: true
+    },
     isConfirmed: {
       type: Boolean,
       required: true
@@ -47,12 +55,12 @@ module.exports = function(){
       type: String,
       required: true
     },
-    address: {
+    to: {
       type: String,
       required: true
     },
-    timestamp: {
-      type: Number,
+    from: {
+      type: String,
       required: true
     },
     createdAt: {

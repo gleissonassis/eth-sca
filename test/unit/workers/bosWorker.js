@@ -1,7 +1,6 @@
 var DaemonHelper      = require('../../../src/helpers/daemonHelper');
 var TransactionBO     = require('../../../src/business/transactionBO');
 var AddressBO         = require('../../../src/business/addressBO');
-var ConfigurationBO   = require('../../../src/business/configurationBO');
 var BOSWorker         = require('../../../src/workers/bosWorker');
 var chai              = require('chai');
 var sinon             = require('sinon');
@@ -11,72 +10,79 @@ describe('Workers > BOSWorker', function() {
   var daemonHelper = new DaemonHelper({});
   var transactionBO = new TransactionBO({});
   var addressBO = new AddressBO({});
-  var configurationBO = new ConfigurationBO({});
 
   var bosWorker = new BOSWorker({
     daemonHelper: daemonHelper,
     transactionBO: transactionBO,
-    addressBO: addressBO,
-    configurationBO: configurationBO
+    addressBO: addressBO
   });
 
-  var getByKeyStub = sinon.stub(configurationBO, 'getByKey');
-  getByKeyStub
-    .withArgs('minimumConfirmations')
-    .returns(Promise.resolve({
-      key: 'minimumConfirmations',
-      value: 3
-    }));
-
   it('should run', function() {
-    var now = new Date();
-
-    var getBlockCountStub = sinon.stub(daemonHelper, 'getBlockCount');
-    getBlockCountStub
+    var getAllStub = sinon.stub(addressBO, 'getAll');
+    getAllStub
       .withArgs()
-      .returns(Promise.resolve(10));
+      .returns(Promise.resolve([
+        {address: '0xBA46454801BBFB741FFc6Addf58dc6C2cC061FD7'},
+        {address: '0xDE9420370d579724410d82B9f761EC17A5aBC2e6'},
+        {address: '0x85d1e34eA327EEF056DB7B73918715d397B1be87'},
+      ]));
 
-    var getBlockHashStub = sinon.stub(daemonHelper, 'getBlockHash');
-    getBlockHashStub
-      .withArgs(7)
-      .returns(Promise.resolve('127e38ed8be22414326fe6465d54025b89047fc676324efe51c27e99b963973b'));
+    var getBlockNumberStub = sinon.stub(daemonHelper, 'getBlockNumber');
+    getBlockNumberStub
+      .withArgs()
+      .returns(Promise.resolve(36));
 
     var transactions = [{
-      address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-      category: 'receive',
-      amount: 1.890,
-      label: '',
-      blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-      blocktime: 1525944061,
-      txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-      isConfirmed: false,
-      time: 1525944061,
-      timereceived: 1525944061,
-      createdAt: now,
-      updatedAt: now,
-      to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-    }, {account: '',
-     address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-     category: 'send',
-     amount: -1.11,
-     fee: -0.0008,
-     label: '',
-     vout: 0,
-     confirmations: 5,
-     generated: true,
-     blockhash: '0b6b308caa3a625cd98732b8cd96c59b78a7dc0a82e089027bad6c2dd703a5d8',
-     blockindex: 0,
-     blocktime: 1525988282,
-     txid: 'c85f98664eb36d20d318e908691a6bc5e291e01c38424669d92449691bcd12a7',
-     walletconflicts: [],
-     time: 1525988282,
-     timereceived: 1525988282,
-     'bip125-replaceable': 'no'}];
+      blockHash: '0xed163fc4ac12caf03f3613abe94fa3d344562e8467979732d51053a897343563',
+      blockNumber: 3239729,
+      from: '0x67aCA279c11a37a6Fe8FAf6378280526A2e0616c',
+      gas: 44481,
+      gasPrice: '1000000000',
+      hash: '0xf9762c7db6ea154594eb2628cc7533dc2d710b9bcd3a88d0ec016b56064b6ef1',
+      input: '0x',
+      nonce: 132,
+      to: '0xBA46454801BBFB741FFc6Addf58dc6C2cC061FD7',
+      transactionIndex: 13,
+      value: '0',
+      v: '0x1c',
+      r: '0xa2cd903625ef286f5d0b259d2d3c5e9d5a955267a17df407d4884e5e8086546b',
+      s: '0x5da846f717fb6f3916d22b314f08e63634b38d43d8ff6e4923c66e454f039d7f'
+    }, {
+      blockHash: '0xed163fc4ac12caf03f3613abe94fa3d344562e8467979732d51053a897343563',
+      blockNumber: 3239729,
+      from: '0xf17f52151EbEF6C7334FAD080c5704D77216b732',
+      gas: 226915,
+      gasPrice: '1000000000',
+      hash: '0xaa5551a1dcb999886b49edd858d56e9c1f008c957f03147f6fbf8e37179cffd5',
+      input: '0xa9059cbb000000000000000000000000c5fdf4076b8f3a5357c5e395ab970b5b54098fef00000000000000000000000000000000000000000000000000132f94e46327c4',
+      nonce: 4094,
+      to: '0xDE9420370d579724410d82B9f761EC17A5aBC2e6',
+      transactionIndex: 12,
+      value: '0',
+      v: '0x2a',
+      r: '0x4098ba9f5854f30830013e0d2556159468905b17051ced9a6cb71aa8e148bb5f',
+      s: '0x42d655f923e2652b46542e9954db9b267db139b39016780be56861ece7274378'
+    }, {
+      blockHash: '0x62f6b366d59740b82a57bbf842010ea33d125f2db37068bf5d0b404594d9c6fb',
+      blockNumber: 3239739,
+      from: '0x1f7A3A009DA9C219220147afe04Dd5428Bab623c',
+      gas: 280318,
+      gasPrice: '1000000000',
+      hash: '0x046ea1ba61909248f4a9ebc9b674c7e7542f29996dd8b059467cd0d5321072d5',
+      input: '0x82ab890a000000000000000000000000000000000000000000000000000000000007ea48',
+      nonce: 33583,
+      to: '0x85d1e34eA327EEF056DB7B73918715d397B1be87',
+      transactionIndex: 6,
+      value: '0',
+      v: '0x29',
+      r: '0x6091e8e249d34c95a985dc288fd904207f9a71f90444b6da55144204c75e8a6b',
+      s: '0x4e112c82d7943497a65b705730260422a058bec915890b5db5c81ec28281795'
+    }];
 
-    var listSinceBlockStub = sinon.stub(daemonHelper, 'listSinceBlock');
-    listSinceBlockStub
-      .withArgs('127e38ed8be22414326fe6465d54025b89047fc676324efe51c27e99b963973b')
-      .returns(Promise.resolve({transactions: transactions}));
+    var getBlockHashStub = sinon.stub(daemonHelper, 'getTransactions');
+    getBlockHashStub
+      .withArgs(24, 36)
+      .returns(Promise.resolve(transactions));
 
     var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
     parseTransactionStub
@@ -84,36 +90,49 @@ describe('Workers > BOSWorker', function() {
       .returns(Promise.resolve());
 
     parseTransactionStub
-      .withArgs(transactions[0])
+      .withArgs(transactions[1])
+      .returns(Promise.resolve());
+
+    parseTransactionStub
+      .withArgs(transactions[2])
       .returns(Promise.resolve());
 
     return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(r).to.be.true;
-        expect(getBlockCountStub.callCount).to.be.equal(1);
-        expect(getBlockHashStub.callCount).to.be.equal(1);
-        expect(listSinceBlockStub.callCount).to.be.equal(1);
-        expect(parseTransactionStub.callCount).to.be.equal(2);
+        expect(getAllStub.callCount).to.be.equal(1);
+        expect(getBlockNumberStub.callCount).to.be.equal(1);
+        expect(parseTransactionStub.callCount).to.be.equal(3);
 
-        getBlockCountStub.restore();
-        getBlockHashStub.restore();
-        listSinceBlockStub.restore();
+        getAllStub.restore();
+        getBlockNumberStub.restore();
         parseTransactionStub.restore();
       });
   });
 
   it('should not fail when the daemon returns an error (getBlockCount)', function() {
-    var getBlockCountStub = sinon.stub(daemonHelper, 'getBlockCount');
-    getBlockCountStub
+    var getAllStub = sinon.stub(addressBO, 'getAll');
+    getAllStub
+      .withArgs()
+      .returns(Promise.resolve([
+        {address: '0xBA46454801BBFB741FFc6Addf58dc6C2cC061FD7'},
+        {address: '0xDE9420370d579724410d82B9f761EC17A5aBC2e6'},
+        {address: '0x85d1e34eA327EEF056DB7B73918715d397B1be87'},
+      ]));
+
+    var getBlockNumberStub = sinon.stub(daemonHelper, 'getBlockNumber');
+    getBlockNumberStub
       .withArgs()
       .returns(Promise.reject());
 
     return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(r).to.be.true;
-        expect(getBlockCountStub.callCount).to.be.equal(1);
+        expect(getBlockNumberStub.callCount).to.be.equal(1);
+        expect(getAllStub.callCount).to.be.equal(1);
 
-        getBlockCountStub.restore();
+        getBlockNumberStub.restore();
+        getAllStub.restore();
       });
   });
 });

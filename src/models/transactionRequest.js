@@ -29,6 +29,10 @@ module.exports = function(){
       type: Number,
       required: true
     },
+    gas: {
+      type: Number,
+      required: true
+    },
     status: {
       type: Number,
       required: false

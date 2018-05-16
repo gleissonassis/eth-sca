@@ -61,12 +61,12 @@ module.exports = function() {
       });
     },
 
-    getByTransactionHash: function(transactionHash) {
+    getByTransactionHash: function(hash) {
       var self = this;
       return new Promise(function(resolve, reject) {
-        logger.info('[BlockchainTransactionDAO] Getting a blockchain transaction by transactionHash %s', transactionHash);
+        logger.info('[BlockchainTransactionDAO] Getting a blockchain transaction by transactionHash %s', hash);
 
-        self.getAll({transactionHash: transactionHash})
+        self.getAll({hash: hash})
         .then(function(items) {
           if (items.length === 0) {
             resolve(null);
@@ -76,7 +76,7 @@ module.exports = function() {
             logger.info('[BlockchainTransactionDAO] The blockchain transaction was found');
           }
         }).catch(function(erro) {
-            logger.error('[BlockchainTransactionDAO] An error has occurred while getting a blockchain transaction by transactionHash %s', transactionHash, erro);
+            logger.error('[BlockchainTransactionDAO] An error has occurred while getting a blockchain transaction by transactionHash %s', hash, erro);
             reject(erro);
         });
       });
@@ -121,11 +121,11 @@ module.exports = function() {
       });
     },
 
-    updateIsConfirmedFlag: function(confirmedBlockIndex) {
+    updateIsConfirmedFlag: function(confirmedBlockNumber) {
       return new Promise(function(resolve, reject) {
-        logger.log('info', '[BlockchainTransactionDAO] Updating isConfirmedFlag from blockchain transactions ', confirmedBlockIndex);
+        logger.log('info', '[BlockchainTransactionDAO] Updating isConfirmedFlag from blockchain transactions ', confirmedBlockNumber);
 
-        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}},
+        model.updateMany({blockNumber: {$lte: confirmedBlockNumber}},
           $.flatten({
             isConfirmed: true,
             updatedAt: new Date()

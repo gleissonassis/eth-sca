@@ -59,89 +59,84 @@ describe('Business > TransactionBO > ', function() {
       var now = new Date();
       dateHelper.setNow(now);
 
-      var estimateSmartFeeStub = sinon.stub(daemonHelper, 'estimateSmartFee');
-      estimateSmartFeeStub
+      var estimateGasStub = sinon.stub(daemonHelper, 'estimateGas');
+      estimateGasStub
+        .withArgs({
+            from: 'from',
+            to: 'to',
+            value: 100000,
+        })
+        .returns(Promise.resolve(31660));
+
+      var getGasPriceStub = sinon.stub(daemonHelper, 'getGasPrice');
+      getGasPriceStub
         .withArgs()
-        .returns(Promise.resolve(new Decimal(0.1).toFixed(8)));
+        .returns(Promise.resolve(1000000000));
 
       var checkHasFundsStub = sinon.stub(addressBO, 'checkHasFunds');
       checkHasFundsStub
-        .withArgs('addressFrom', new Decimal(1.11).toFixed(8), 0)
+        .withArgs('from', 100000 + (31660 * 1000000000))
         .returns(Promise.resolve(true));
-
       var transactionRequestSaveStub = sinon.stub(transactionRequestDAO, 'save');
       transactionRequestSaveStub
         .withArgs({
-          ownerId: 'ownerId',
-          ownerTransactionId: 'ownerTransactionId',
-          from: 'addressFrom',
-          to: 'addressTo',
-          amount: 1,
-          status: 0,
-          comment: 'comment',
-          commentTo: 'addressFrom@addressTo',
-          createdAt: now
+            ownerId: 'ownerId',
+            ownerTransactionId: 'ownerTransactionId',
+            from: 'from',
+            to: 'to',
+            status: 0,
+            amount: 100000,
+            gas: 31660,
+            createdAt: now
         })
         .returns(Promise.resolve({
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: 'ownerTransactionId',
-          from: 'addressFrom',
-          to: 'addressTo',
-          amount: 1,
+          from: 'from',
+          to: 't0',
+          amount: 100000,
           status: 0,
-          comment: 'comment',
-          commentTo: 'addressFrom@addressTo',
           createdAt: now
+        }));
+
+      var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
+      getByAddressStub
+        .withArgs(null, 'from')
+        .returns(Promise.resolve({
+          address: 'from',
+          privateKey: 'privateKey'
         }));
 
       var sendTransactionStub = sinon.stub(daemonHelper, 'sendTransaction');
       sendTransactionStub
-        .withArgs(
-          'addressTo',
-          1,
-          'comment',
-          'addressFrom@addressTo'
-        )
-        .returns(Promise.resolve('txid'));
-
-      var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
-      getTransactionStub
-        .withArgs('txid')
+        .withArgs({
+            from: 'from',
+            to: 'to',
+            value: 100000,
+            gas: 31660 * 1000000000
+        }, 'privateKey')
         .returns(Promise.resolve({
-            amount: 0,
-            fee: -0.000197,
-            confirmations: 1,
-            blockhash:'02ae1f8c2ebe394be130ba0df2dfcdb463fa10766de2c6f6505f4470d1b08c52',
-            blockindex:1,
-            blocktime: 1525771681,
-            txid:'txid',
-            walletconflicts:[],
-            time: 1525771674,
-            timereceived: 1525771674,
-            'bip125-replaceable':'no',
-            comment:'comment',
-            to: 'addressFrom@addressTo',
-            details:[{
-              account: '',
-              address: 'addressFrom',
-              category: 'send',
-              amount: -1,
-              label: '',
-              vout: 0,
-              fee: -0.000197,
-              abandoned: false
-            },{
-              account: '',
-              address: 'addressTo',
-              category: 'receive',
-              amount: 1,
-              label: '',
-              vout: 0
-            }
-          ]
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          contractAddress: null,
+          cumulativeGasUsed: 456415,
+          from: 'from',
+          gasUsed: 46660,
+          logs: [],
+          status: true,
+          to: 'to',
+          transactionHash: 'transactionHash',
+          transactionIndex: 16
         }));
 
+        var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
+        getTransactionStub
+          .withArgs('transactionHash')
+          .returns(Promise.resolve({
+            gasPrice: 1000000000,
+            gas: 100000
+          }));
 
       var transactionRequestUpdateStub = sinon.stub(transactionRequestDAO, 'update');
       transactionRequestUpdateStub
@@ -149,102 +144,80 @@ describe('Business > TransactionBO > ', function() {
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: 'ownerTransactionId',
-          to: 'addressTo',
-          from: 'addressFrom',
-          amount: 1,
+          to: 'to',
+          from: 'from',
+          amount: 100000,
           status: 1,
-          comment: 'comment',
-          commentTo: 'addressFrom@addressTo',
           createdAt: now,
           updatedAt: now,
-          transactionHash: 'txid',
-          fee: 0.000197
+          transactionHash: 'transactionHash',
+          fee: 100000 * 1000000000
         })
         .returns(Promise.resolve({
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: 'ownerTransactionId',
-          to: 'addressTo',
-          from: 'addressFrom',
-          amount: 1,
+          to: 'to',
+          from: 'from',
+          amount: 100000,
           status: 1,
-          comment: 'comment',
-          commentTo: 'addressFrom@addressTo',
           createdAt: now,
           updatedAt: now,
-          transactionHash: 'txid',
-          fee: 0.000197
+          transactionHash: 'transactionHash',
+          fee: 100000 * 1000000000
         }));
 
-      var withdrawStub = sinon.stub(addressBO, 'withdraw');
-      withdrawStub
-        .withArgs('addressFrom', 1.000197, 1)
-        .returns(Promise.resolve());
-
-      var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-      getByAddressStub
-        .withArgs(null, 'addressTo')
-        .returns(Promise.resolve({
-          address: 'addressTo'
-        }));
-
-
-      var depositStub = sinon.stub(addressBO, 'deposit');
-      depositStub
-        .withArgs('addressFrom', new Decimal(1).toFixed(8), 1)
-        .returns(Promise.resolve());
+      var updateBalance = sinon.stub(addressBO, 'updateBalance');
+      updateBalance
+        .withArgs({address: 'from', privateKey: 'privateKey'});
 
       return transactionBO.save({
         ownerId: 'ownerId',
         ownerTransactionId: 'ownerTransactionId',
-        from: 'addressFrom',
-        to: 'addressTo',
-        amount: 1,
-        comment: 'comment'
+        from: 'from',
+        to: 'to',
+        amount: 100000
       })
         .then(function(r){
           expect(r).to.be.deep.equal({
             id: 'ID',
             ownerId: 'ownerId',
             ownerTransactionId: 'ownerTransactionId',
-            to: 'addressTo',
-            from: 'addressFrom',
-            amount: 1,
+            to: 'to',
+            from: 'from',
+            gas: 31660,
+            amount: 100000,
             status: 1,
-            comment: 'comment',
-            commentTo: 'addressFrom@addressTo',
             createdAt: now,
             updatedAt: now,
-            transactionHash: 'txid',
-            fee: 0.000197
+            transactionHash: 'transactionHash',
+            fee: 100000 * 1000000000
           });
 
-          expect(estimateSmartFeeStub.callCount).to.be.equal(1);
+          expect(estimateGasStub.callCount).to.be.equal(1);
+          expect(getGasPriceStub.callCount).to.be.equal(1);
           expect(checkHasFundsStub.callCount).to.be.equal(1);
+          expect(getByAddressStub.callCount).to.be.equal(2);
 
-          expect(transactionRequestSaveStub.callCount).to.be.equal(1);
-          expect(transactionRequestUpdateStub.callCount).to.be.equal(2);
           expect(sendTransactionStub.callCount).to.be.equal(1);
-
           expect(getTransactionStub.callCount).to.be.equal(1);
-          expect(withdrawStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
-          expect(depositStub.callCount).to.be.equal(1);
+          expect(transactionRequestUpdateStub.callCount).to.be.equal(2);
+          expect(updateBalance.callCount).to.be.equal(1);
 
-          estimateSmartFeeStub.restore();
+          estimateGasStub.restore();
+          getGasPriceStub.restore();
           checkHasFundsStub.restore();
           transactionRequestSaveStub.restore();
-          transactionRequestUpdateStub.restore();
+          getByAddressStub.restore();
           sendTransactionStub.restore();
           getTransactionStub.restore();
-          withdrawStub.restore();
-          getTransactionStub.restore();
+          transactionRequestUpdateStub.restore();
+          updateBalance.restore();
           getByAddressStub.restore();
-          depositStub.restore();
         });
     });
 
-    it('parseTransaction - send transaction not found but with request', function() {
+    it('parseTransaction - transaction not found but with request', function() {
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
@@ -254,15 +227,14 @@ describe('Business > TransactionBO > ', function() {
       var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
       getAll
         .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'send'
+          hash: 'hash'
         })
         .returns(Promise.resolve([]));
 
       var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
       transactionRequestGetAllStub
         .withArgs({
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2'
+          transactionHash: 'hash'
         })
         .returns(Promise.resolve([{
           ownerTransactionId: 'ownerTransactionId'
@@ -271,51 +243,57 @@ describe('Business > TransactionBO > ', function() {
       var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
       saveStub
         .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+          isConfirmed: false
         })
         .returns(Promise.resolve({
           _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
       getByAddressStub
-        .withArgs(null, '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ')
+        .withArgs(null, 'to')
         .returns(Promise.resolve({
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
+          address: 'to',
           ownerId: 'ownerId'
         }));
+
+      getByAddressStub
+        .withArgs(null, 'from')
+        .returns(Promise.resolve(null));
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
         .withArgs({
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: -1.890012,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: false,
           notifications: {
             creation: {
@@ -325,16 +303,19 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
           timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          createdAt: now
         })
         .returns(Promise.resolve({
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: -1.890012,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: false,
           notifications: {
             creation: {
@@ -344,56 +325,49 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
+          createdAt: now
         }));
 
       return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'send',
-        amount: -1.890,
-        fee: -0.000012,
-        label: '',
-        vout: 0,
-        confirmations: 1,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
+        blockHash: 'blockHash',
+        blockNumber: 3236377,
+        from: 'from',
+        gas: 51505,
+        gasPrice: 1000000000,
+        hash: 'hash',
+        input: '0x',
+        nonce: 3,
+        to: 'to',
+        transactionIndex: 16,
+        value: 10000000000
+      }, 3236378)
         .then(function(r){
           expect(r).to.be.deep.equal({
             id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'send',
-            amount: -1.890,
-            fee: -0.000012,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: false,
-            time: 1525944061,
-            timereceived: 1525944061,
+            blockHash: 'blockHash',
+            blockNumber: 3236377,
+            from: 'from',
+            gas: 51505,
+            gasPrice: 1000000000,
+            hash: 'hash',
+            input: '0x',
+            nonce: 3,
+            to: 'to',
+            transactionIndex: 16,
+            value: 10000000000,
             createdAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+            isConfirmed: false
           });
 
-          expect(getNowStub.callCount).to.be.equal(4);
+          expect(getNowStub.callCount).to.be.equal(2);
           expect(getAll.callCount).to.be.equal(1);
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
+          expect(getByAddressStub.callCount).to.be.equal(2);
 
           getNowStub.restore();
           getAll.restore();
@@ -404,7 +378,7 @@ describe('Business > TransactionBO > ', function() {
         });
     });
 
-    it('parseTransaction - receive transaction not found but with request', function() {
+    it('parseTransaction - transaction not found and without request', function() {
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
@@ -414,66 +388,76 @@ describe('Business > TransactionBO > ', function() {
       var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
       getAll
         .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'receive'
+          hash: 'hash'
         })
         .returns(Promise.resolve([]));
 
       var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
       transactionRequestGetAllStub
         .withArgs({
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2'
+          transactionHash: 'hash'
         })
-        .returns(Promise.resolve([{
-          ownerTransactionId: 'ownerTransactionId'
-        }]));
+        .returns(Promise.resolve([]));
 
       var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
       saveStub
         .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+          isConfirmed: false
         })
         .returns(Promise.resolve({
           _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
       getByAddressStub
-        .withArgs(null, '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ')
+        .withArgs(null, 'to')
         .returns(Promise.resolve({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          ownerId: 'ownerId'
+          address: 'to',
+          ownerId: 'ownerId',
+          privateKey: 'privateKey'
         }));
+
+      var updateBalance = sinon.stub(addressBO, 'updateBalance');
+      updateBalance
+        .withArgs({address: 'to', privateKey: 'privateKey'});
+
+      getByAddressStub
+        .withArgs(null, 'from')
+        .returns(Promise.resolve(null));
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
         .withArgs({
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: 1.890,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: false,
           notifications: {
             creation: {
@@ -483,16 +467,19 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
           timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          createdAt: now
         })
         .returns(Promise.resolve({
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: 1.890,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: false,
           notifications: {
             creation: {
@@ -502,54 +489,49 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
+          createdAt: now
         }));
 
       return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'receive',
-        amount: 1.890,
-        label: '',
-        vout: 0,
-        confirmations: 1,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
+        blockHash: 'blockHash',
+        blockNumber: 3236377,
+        from: 'from',
+        gas: 51505,
+        gasPrice: 1000000000,
+        hash: 'hash',
+        input: '0x',
+        nonce: 3,
+        to: 'to',
+        transactionIndex: 16,
+        value: 10000000000
+      }, 3236378)
         .then(function(r){
           expect(r).to.be.deep.equal({
             id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'receive',
-            amount: 1.890,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: false,
-            time: 1525944061,
-            timereceived: 1525944061,
+            blockHash: 'blockHash',
+            blockNumber: 3236377,
+            from: 'from',
+            gas: 51505,
+            gasPrice: 1000000000,
+            hash: 'hash',
+            input: '0x',
+            nonce: 3,
+            to: 'to',
+            transactionIndex: 16,
+            value: 10000000000,
             createdAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+            isConfirmed: false
           });
 
-          expect(getNowStub.callCount).to.be.equal(4);
+          expect(getNowStub.callCount).to.be.equal(2);
           expect(getAll.callCount).to.be.equal(1);
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
+          expect(getByAddressStub.callCount).to.be.equal(2);
 
           getNowStub.restore();
           getAll.restore();
@@ -557,10 +539,11 @@ describe('Business > TransactionBO > ', function() {
           saveStub.restore();
           transactionSaveStub.restore();
           getByAddressStub.restore();
+          updateBalance.restore();
         });
     });
 
-    it('parseTransaction - send transaction not found but without request', function() {
+    it('parseTransaction - confirmed transaction not found and without request', function() {
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
@@ -570,238 +553,75 @@ describe('Business > TransactionBO > ', function() {
       var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
       getAll
         .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'send'
+          hash: 'hash'
         })
         .returns(Promise.resolve([]));
 
       var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
       transactionRequestGetAllStub
         .withArgs({
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2'
+          transactionHash: 'hash'
         })
         .returns(Promise.resolve([]));
 
       var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
       saveStub
         .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+          isConfirmed: true
         })
         .returns(Promise.resolve({
           _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        }));
-
-      var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-      getByAddressStub
-        .withArgs(null, '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ')
-        .returns(Promise.resolve({
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          ownerId: 'ownerId'
-        }));
-
-      var transactionSaveStub = sinon.stub(transactionDAO, 'save');
-      transactionSaveStub
-        .withArgs({
-          ownerId: 'ownerId',
-          ownerTransactionId: null,
-          amount: -1.890012,
-          isConfirmed: false,
-          notifications: {
-            creation: {
-              isNotified: false
-            },
-            confirmation: {
-              isNotified: false
-            }
-          },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          ownerId: 'ownerId',
-          ownerTransactionId: null,
-          amount: -1.890012,
-          isConfirmed: false,
-          notifications: {
-            creation: {
-              isNotified: false
-            },
-            confirmation: {
-              isNotified: false
-            }
-          },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
-        }));
-
-      var withdrawStub = sinon.stub(addressBO, 'withdraw');
-      withdrawStub
-        .withArgs('3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ', new Decimal(1.890012).toFixed(8), 0)
-        .returns(Promise.resolve());
-
-      var depositStub = sinon.stub(addressBO, 'deposit');
-      depositStub
-        .withArgs('3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ', new Decimal(1.890012).toFixed(8), 1)
-        .returns(Promise.resolve());
-
-      return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'send',
-        amount: -1.890,
-        fee: -0.000012,
-        label: '',
-        vout: 0,
-        confirmations: 1,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'send',
-            amount: -1.890,
-            fee: -0.000012,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: false,
-            time: 1525944061,
-            timereceived: 1525944061,
-            createdAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-          });
-
-          expect(getNowStub.callCount).to.be.equal(4);
-          expect(getAll.callCount).to.be.equal(1);
-          expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
-          expect(saveStub.callCount).to.be.equal(1);
-          expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
-          expect(withdrawStub.callCount).to.be.equal(1);
-          expect(depositStub.callCount).to.be.equal(1);
-
-          getNowStub.restore();
-          getAll.restore();
-          transactionRequestGetAllStub.restore();
-          saveStub.restore();
-          transactionSaveStub.restore();
-          getByAddressStub.restore();
-          withdrawStub.restore();
-          depositStub.restore();
-        });
-    });
-
-    it('parseTransaction - send confirmed transaction not found but without request', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
-      getAll
-        .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'send'
-        })
-        .returns(Promise.resolve([]));
-
-      var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
-      transactionRequestGetAllStub
-        .withArgs({
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2'
-        })
-        .returns(Promise.resolve([]));
-
-      var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
-      saveStub
-        .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
+          blockHash: 'blockHash',
+          blockNumber: 3236377,
+          from: 'from',
+          gas: 51505,
+          gasPrice: 1000000000,
+          hash: 'hash',
+          input: '0x',
+          nonce: 3,
+          to: 'to',
+          transactionIndex: 16,
+          value: 10000000000,
           isConfirmed: true,
-          time: 1525944061,
-          timereceived: 1525944061,
           createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'send',
-          amount: -1.890,
-          fee: -0.000012,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: true,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
         }));
+
+      var updateBalance = sinon.stub(addressBO, 'updateBalance');
+      updateBalance
+        .withArgs({address: 'to', privateKey: 'privateKey'});
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
       getByAddressStub
-        .withArgs(null, '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ')
+        .withArgs(null, 'to')
         .returns(Promise.resolve({
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
+          address: 'to',
           ownerId: 'ownerId'
         }));
+
+      getByAddressStub
+        .withArgs(null, 'from')
+        .returns(Promise.resolve(null));
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
         .withArgs({
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: -1.890012,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: true,
           notifications: {
             creation: {
@@ -811,16 +631,19 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
           timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          createdAt: now
         })
         .returns(Promise.resolve({
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: -1.890012,
+          amount: 10000000000,
+          gas: 51505,
+          gasPrice: 1000000000,
           isConfirmed: true,
           notifications: {
             creation: {
@@ -830,348 +653,58 @@ describe('Business > TransactionBO > ', function() {
               isNotified: false
             }
           },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
+          transactionHash: 'hash',
+          to: 'to',
+          from: 'from',
+          createdAt: now
         }));
 
-      var withdrawStub = sinon.stub(addressBO, 'withdraw');
-      withdrawStub
-        .withArgs('3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ', 1.890012, 0)
-        .returns(Promise.resolve());
-
       return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'send',
-        amount: -1.890,
-        fee: -0.000012,
-        label: '',
-        vout: 0,
-        confirmations: 10,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
+        blockHash: 'blockHash',
+        blockNumber: 3236377,
+        from: 'from',
+        gas: 51505,
+        gasPrice: 1000000000,
+        hash: 'hash',
+        input: '0x',
+        nonce: 3,
+        to: 'to',
+        transactionIndex: 16,
+        value: 10000000000
+      }, 3237378)
         .then(function(r){
           expect(r).to.be.deep.equal({
             id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'send',
-            amount: -1.890,
-            fee: -0.000012,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: true,
-            time: 1525944061,
-            timereceived: 1525944061,
+            blockHash: 'blockHash',
+            blockNumber: 3236377,
+            from: 'from',
+            gas: 51505,
+            gasPrice: 1000000000,
+            hash: 'hash',
+            input: '0x',
+            nonce: 3,
+            to: 'to',
+            transactionIndex: 16,
+            value: 10000000000,
             createdAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
+            isConfirmed: true
           });
 
-          expect(getNowStub.callCount).to.be.equal(4);
+          expect(getNowStub.callCount).to.be.equal(2);
           expect(getAll.callCount).to.be.equal(1);
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
-          expect(withdrawStub.callCount).to.be.equal(1);
+          expect(getByAddressStub.callCount).to.be.equal(2);
+          expect(updateBalance.callCount).to.be.equal(1);
 
           getNowStub.restore();
           getAll.restore();
           transactionRequestGetAllStub.restore();
           saveStub.restore();
+          updateBalance.restore();
           transactionSaveStub.restore();
           getByAddressStub.restore();
-          withdrawStub.restore();
-        });
-    });
-
-    it('parseTransaction - receive transaction found', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
-      getAll
-        .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'receive'
-        })
-        .returns(Promise.resolve([{
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          updatedAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        }]));
-
-      var updateStub = sinon.stub(blockchainTransactionDAO, 'update');
-      updateStub
-        .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          updatedAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          updatedAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        }));
-
-      var updateTransactionInfoStub = sinon.stub(transactionDAO, 'updateTransactionInfo');
-      updateTransactionInfoStub
-        .withArgs('028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-                  '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-                  1525944061)
-        .returns(Promise.resolve());
-
-      return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'receive',
-        amount: 1.890,
-        label: '',
-        vout: 0,
-        confirmations: 1,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'receive',
-            amount: 1.890,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: false,
-            time: 1525944061,
-            timereceived: 1525944061,
-            createdAt: now,
-            updatedAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-          });
-
-          expect(getNowStub.callCount).to.be.equal(1);
-          expect(getAll.callCount).to.be.equal(1);
-          expect(updateStub.callCount).to.be.equal(1);
-
-          getNowStub.restore();
-          getAll.restore();
-          updateStub.restore();
-        });
-    });
-
-    it('parseTransaction - receive transaction not found but without request', function() {
-      var now = new Date();
-      var getNowStub = sinon.stub(dateHelper, 'getNow');
-      getNowStub
-        .withArgs()
-        .returns(now);
-
-      var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
-      getAll
-        .withArgs({
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          category: 'receive'
-        })
-        .returns(Promise.resolve([]));
-
-      var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
-      transactionRequestGetAllStub
-        .withArgs({
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2'
-        })
-        .returns(Promise.resolve([]));
-
-      var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
-      saveStub
-        .withArgs({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          category: 'receive',
-          amount: 1.890,
-          label: '',
-          blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-          blocktime: 1525944061,
-          txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          isConfirmed: false,
-          time: 1525944061,
-          timereceived: 1525944061,
-          createdAt: now,
-          to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-        }));
-
-      var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-      getByAddressStub
-        .withArgs(null, '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ')
-        .returns(Promise.resolve({
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          ownerId: 'ownerId'
-        }));
-
-      var transactionSaveStub = sinon.stub(transactionDAO, 'save');
-      transactionSaveStub
-        .withArgs({
-          ownerId: 'ownerId',
-          ownerTransactionId: null,
-          amount: 1.890,
-          isConfirmed: false,
-          notifications: {
-            creation: {
-              isNotified: false
-            },
-            confirmation: {
-              isNotified: false
-            }
-          },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          ownerId: 'ownerId',
-          ownerTransactionId: null,
-          amount: 1.890,
-          isConfirmed: false,
-          notifications: {
-            creation: {
-              isNotified: false
-            },
-            confirmation: {
-              isNotified: false
-            }
-          },
-          transactionHash: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-          address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-          timestamp: 1525944061,
-          createdAt: dateHelper.getNow()
-        }));
-
-      var depositStub = sinon.stub(addressBO, 'deposit');
-      depositStub
-        .withArgs('2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ', 'receive', false, false, 1.890)
-        .returns(Promise.resolve());
-
-      return transactionBO.parseTransaction({
-        account: '',
-        address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        category: 'receive',
-        amount: 1.890,
-        label: '',
-        vout: 0,
-        confirmations: 1,
-        generated: true,
-        blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-        blockindex: 0,
-        blocktime: 1525944061,
-        txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-        walletconflicts: [],
-        time: 1525944061,
-        to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-        timereceived: 1525944061,
-        'bip125-replaceable': 'no'
-      })
-        .then(function(r){
-          expect(r).to.be.deep.equal({
-            id: 'ID',
-            address: '2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ',
-            category: 'receive',
-            amount: 1.890,
-            label: '',
-            blockhash: '0fcab413728d24bc507b7811cde4d60bd55d0383a2b419c99b09cab344f55588',
-            blocktime: 1525944061,
-            txid: '028b3d59339b9fa8f8cb8ab9ec1e659ab168bb29663bced882c823db4657bfd2',
-            isConfirmed: false,
-            time: 1525944061,
-            timereceived: 1525944061,
-            createdAt: now,
-            to: '3N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ@2N6NzVhB5JYzoJDahoauvwSEAJ2gmF5C4sJ'
-          });
-
-          expect(getNowStub.callCount).to.be.equal(4);
-          expect(getAll.callCount).to.be.equal(1);
-          expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
-          expect(saveStub.callCount).to.be.equal(1);
-          expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(1);
-          expect(depositStub.callCount).to.be.equal(1);
-
-          getNowStub.restore();
-          getAll.restore();
-          transactionRequestGetAllStub.restore();
-          saveStub.restore();
-          transactionSaveStub.restore();
-          getByAddressStub.restore();
-          depositStub.restore();
         });
     });
   });

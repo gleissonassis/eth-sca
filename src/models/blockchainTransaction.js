@@ -5,40 +5,52 @@ var model = null;
 
 module.exports = function(){
   var schema = mongooseSchema({
-    category: {
+    blockHash: {
       type: String,
       required: true
     },
-    address: {
+    blockNumber: {
+      type: Number,
+      required: true
+    },
+    from: {
       type: String,
       required: true
     },
-    amount: {
+    to: {
+      type: String,
+      required: true
+    },
+    value: {
       type: Number,
       required: true,
     },
-    label: {
-      type: String,
-      required: false
+    gas: {
+      type: Number,
+      required: true,
     },
-    txid: {
+    gasPrice: {
+      type: Number,
+      required: true,
+    },
+    hash: {
       type: String,
       required: true
     },
-    fee: {
-      type: Number,
+    input: {
+      type: String,
       required: false
+    },
+    nonce: {
+      type: Number,
+      required: true
+    },
+    transactionIndex: {
+      type: Number,
+      required: true
     },
     isConfirmed: {
       type: Boolean,
-      required: false
-    },
-    time: {
-      type: Number,
-      required: true
-    },
-    timereceived: {
-      type: Number,
       required: true
     },
     createdAt: {
@@ -48,10 +60,6 @@ module.exports = function(){
     updatedAt: {
       type: Date,
       required: false,
-    },
-    to: {
-      type: String,
-      required: false
     }
   });
 
