@@ -122,14 +122,14 @@ module.exports = function() {
       });
     },
 
-    updateTransactionInfo: function(transactionHash, blockhash, blocktime) {
+    updateTransactionInfo: function(transactionHash, blockhash, blockNumber) {
       return new Promise(function(resolve, reject) {
-        logger.info('[TransactionDAO] Updating transaction informations from transactions ', transactionHash, blockhash, blocktime);
+        logger.info('[TransactionDAO] Updating transaction informations from transactions ', transactionHash, blockhash, blockNumber);
 
         model.updateMany({transactionHash: transactionHash},
           $.flatten({
             blockhash: blockhash,
-            blocktime: blocktime,
+            blockNumber: blockNumber,
             updatedAt: new Date()
           }, {multi: true}))
         .then(function() {

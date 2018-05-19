@@ -11,14 +11,17 @@ var settings                = require('../config/settings');
 var request                 = require('request');
 var nodemailer              = require('nodemailer');
 var mutex                   = require( 'node-mutex' );
-var Client                  = require('bitcoin-core');
+var Web3                    = require('web3');
+
+var web3 = new Web3();
+web3.setProvider(new web3.providers.HttpProvider(settings.daemonSettings.baseUrl));
 
 module.exports = {
   getHelper: function(helper) {
     switch (helper) {
       case 'daemon':
         return new DaemonHelper({
-          client: new Client(settings.daemonSettings)
+          web3: web3
         });
       case 'mutex':
         return new MutexHelper({

@@ -5,6 +5,7 @@ var logger          = require('../config/logger');
 module.exports = function(dependencies) {
   var transactionBO = dependencies.transactionBO;
   var addressBO = dependencies.addressBO;
+  var configurationBO = dependencies.configurationBO;
   var daemonHelper = dependencies.daemonHelper;
 
   return {
@@ -32,7 +33,7 @@ module.exports = function(dependencies) {
       }
     },
 
-    parseTransactionsFromDaemon: function(transactions) {
+    parseTransactionsFromDaemon: function(transactions, currentBlockNumber) {
       var p = [];
       logger.info('[BOSWorker] Total of blockchain transactions', transactions.length);
 
@@ -42,7 +43,7 @@ module.exports = function(dependencies) {
           logger.info('[BOSWorker] Parsing the transaction', transactions[i].hash, JSON.stringify(transactions[i]));
 
           var pTransaction = new Promise(function(resolve) {
-            transactionBO.parseTransaction(transactions[i])
+            transactionBO.parseTransaction(transactions[i], currentBlockNumber)
               .then(resolve)
               .catch(resolve);
           });
@@ -60,12 +61,19 @@ module.exports = function(dependencies) {
     synchronizeToBlockchain: function() {
       var self = this;
       var chain = Promise.resolve();
+      var currentBlockNumber = 0;
+      var blockCount = 0;
 
       return new Promise(function(resolve) {
         logger.info('[BOSWorker] Starting Blockchain Observer Service');
 
         return chain
           .then(function() {
+            logger.info('[BOSWorker] Getting current block number');
+            return configurationBO.getByKey('currentBlockNumber');
+          })
+          .then(function(r) {
+            currentBlockNumber = parseInt(r.value);
             logger.info('[BOSWorker] Getting the address from database');
             return addressBO.getAll();
           })
@@ -78,17 +86,31 @@ module.exports = function(dependencies) {
             return daemonHelper.getBlockNumber();
           })
           .then(function(r) {
-            logger.info('[BOSWorker] The current blockcount is', r);
-            start = r - settings.daemonSettings.previousBlocksToCheck;
+            blockCount = r;
+            logger.info('[BOSWorker] The current block number is', currentBlockNumber);
+            logger.info('[BOSWorker] The current block count is', blockCount);
+
+            start = currentBlockNumber - settings.daemonSettings.previousBlocksToCheck;
 
             if (start < 0) {
               start = 0;
             }
-            console.log(start, r);
-            return daemonHelper.getTransactions(start, r);
+
+            logger.info('[BOSWorker] Getting transactions from blocks', start, currentBlockNumber);
+            return daemonHelper.getTransactions(start, currentBlockNumber);
           })
           .then(function(r) {
-            return self.parseTransactionsFromDaemon(r);
+            logger.info('[BOSWorker] Parsing blockchain transactions', r.length);
+            return self.parseTransactionsFromDaemon(r, currentBlockNumber);
+          })
+          .then(function() {
+            currentBlockNumber += settings.daemonSettings.previousBlocksToCheck;
+
+            if (currentBlockNumber > blockCount) {
+              currentBlockNumber = blockCount;
+            }
+
+            return configurationBO.update({key:'currentBlockNumber', value: currentBlockNumber});
           })
           .then(function() {
             logger.info('[BOSWorker] Blockchain Observer Service has finished this execution');

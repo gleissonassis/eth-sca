@@ -8,6 +8,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "ETH": "DB_NAME=eth-cdal PORT=7000 DAEMON_BASE_URL=https://ropsten.infura.io node src/server.js",
+    "ETC": "DB_NAME=etc-cdal PORT=7001 DAEMON_BASE_URL=http://localhost:30304 node src/server.js",
     "test": "NODE_ENV=test istanbul cover --reporter=html ./node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {
@@ -30,7 +32,6 @@
     "var": "^0.3.2"
   },
   "dependencies": {
-    "bitcoin-core": "^2.0.0",
     "body-parser": "^1.18.2",
     "cors": "^2.8.4",
     "decimal.js": "^10.0.0",

@@ -5,13 +5,6 @@ module.exports = function() {
   var business = BOFactory.getBO('transaction');
 
   return {
-    getAll: function(req, res) {
-      var rh = new HTTPResponseHelper(req, res);
-      business.getAll({})
-        .then(rh.ok)
-        .catch(rh.error);
-    },
-
     getAllByOwnerId: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
       business.getAll({ownerId: req.params.ownerId})
@@ -29,7 +22,7 @@ module.exports = function() {
       }
 
       if (req.params.address) {
-        filter.address = req.params.address;
+        filter.from = req.params.from;
       }
 
       if (req.params.transactionHash) {

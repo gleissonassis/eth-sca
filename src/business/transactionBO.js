@@ -171,6 +171,7 @@ module.exports = function(dependencies) {
             to: entity.to,
             value: entity.amount
         };
+        var amountToCheck = 0;
 
         return chain
           .then(function(r) {
@@ -191,9 +192,9 @@ module.exports = function(dependencies) {
               });
           })
           .then(function(r) {
-            ethTransaction.gas = r;
+            ethTransaction.gas = estimatedGas;
             logger.info('[TransactionBO.save()] Estimated fee', r);
-            var amountToCheck = new Decimal(r).plus(entity.amount).toNumber();
+            amountToCheck = new Decimal(r).plus(entity.amount).toNumber();
             return addressBO.checkHasFunds(entity.from, amountToCheck, 0);
           })
           .then(function(r) {
@@ -201,7 +202,7 @@ module.exports = function(dependencies) {
               throw {
                 status: 409,
                 error: 'INVALID_WALLET_BALANCE',
-                message: 'The wallet does not have funds to withdraw ' + entity.amount
+                message: 'The wallet does not have funds to withdraw ' + entity.amount + ' (' + amountToCheck + ')'
               };
             }
 
@@ -215,7 +216,7 @@ module.exports = function(dependencies) {
           .then(function(r) {
             transactionRequest._id = r._id;
             logger.info('[TransactionBO] Sending the transaction to the blockchain', JSON.stringify(transactionRequest), JSON.stringify(ethTransaction));
-            return daemonHelper.sendTransaction(ethTransaction, address.privateKey);
+            return daemonHelper.sendTransaction(ethTransaction, address);
           })
           .then(function(r) {
             logger.debug('[TransactionBO] Return of blockchain', JSON.stringify(r));
@@ -284,9 +285,7 @@ module.exports = function(dependencies) {
       });
     },
 
-    updateBlockchainTransaction: function(transaction, blockchainTransaction) {
-      var self = this;
-
+    updateBlockchainTransaction: function(transaction, blockchainTransaction, currentBlockNumber) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
         var rBlockchainTransaction = null;
@@ -301,48 +300,53 @@ module.exports = function(dependencies) {
             minimumConfirmations = parseInt(r.value);
 
             transaction.blockhash = blockchainTransaction.blockhash;
-            transaction.blocktime = blockchainTransaction.blocktime;
+            transaction.blockNumber = blockchainTransaction.blockNumber;
             transaction.updatedAt = dateHelper.getNow();
             originIsConfirmed = transaction.isConfirmed;
-            transaction.isConfirmed = blockchainTransaction.confirmations >= minimumConfirmations;
+            transaction.isConfirmed = (currentBlockNumber - blockchainTransaction.blockNumber) >= minimumConfirmations;
+
+            logger.info('[TransactionBO] Checking if the transactions is confirmed',
+              currentBlockNumber,
+              blockchainTransaction.blockNumber,
+              (currentBlockNumber - blockchainTransaction.blockNumber) >= minimumConfirmations);
 
             return blockchainTransactionDAO.update(transaction);
           })
           .then(function(r) {
             rBlockchainTransaction = r;
-            return transactionDAO.updateTransactionInfo(blockchainTransaction.txid,
+            return transactionDAO.updateTransactionInfo(blockchainTransaction.hash,
               blockchainTransaction.blockhash,
-              blockchainTransaction.blocktime);
+              blockchainTransaction.blockNumber);
           })
           .then(function() {
             if (!originIsConfirmed && transaction.isConfirmed) {
-              var address = null;
-              var amount = blockchainTransaction.amount + (blockchainTransaction.fee ? blockchainTransaction.fee : 0);
+              var p = [];
+              logger.info('[TransactionBO] Updating confirmation flag and addresses balance', blockchainTransaction.hash);
+              p.push(transactionDAO.updateIsConfirmedFlag(blockchainTransaction.hash));
+              p.push(addressBO.getByAddress(null, blockchainTransaction.to)
+                .then(function(addressTo) {
+                  if (addressTo) {
+                    logger.info('[TransactionBO] Updating to address balance', addressTo.address);
+                    addressBO.updateBalance(addressTo);
+                  }
+                })
+              );
+              p.push(addressBO.getByAddress(null, blockchainTransaction.from)
+                .then(function(addressFrom) {
+                  if (addressFrom) {
+                    logger.info('[TransactionBO] Updating from address balance ', addressTo.address);
+                    addressBO.updateBalance(addressFrom);
+                  }
+                })
+              );
 
-              if (blockchainTransaction.to) {
-                var addresses = blockchainTransaction.to.split('@');
-
-                if (blockchainTransaction.category === 'send') {
-                  address = addresses[0]; // from
-                } else if (blockchainTransaction.category === 'receive'){
-                  address = addresses[1]; //to
-                }
-              } else {
-                address = blockchainTransaction.address;
-              }
-
-              if (blockchainTransaction.category === 'send') {
-                amount = new Decimal(amount).times(-1);
-              }
-
-              return self.updateBalanceFromBlockchainTransaction(address, blockchainTransaction.category, true, true, amount)
-                .then(function() {
-                  return transactionDAO.updateIsConfirmedFlag(blockchainTransaction.txid);
-                });
+              return Promise.all(p);
+            } else {
+              logger.info('[TransactionBO] There is nothing to update (balance and isConfirmed flag)', blockchainTransaction.hash);
             }
           })
           .then(function() {
-            return rBlockchainTransaction;
+            return modelParser.clear(rBlockchainTransaction);
           })
           .then(resolve)
           .catch(reject);
@@ -407,12 +411,8 @@ module.exports = function(dependencies) {
             p.push(addressBO.getByAddress(null, blockchainTransaction.to)
               .then(function(addressTo) {
                 if (addressTo) {
-                  logger.info('[TransactionBO] The address was fount at database', blockchainTransaction.to);
-
-                  if (rBlockchainTransaction.isConfirmed && !transactionRequest) {
-                    logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.to, blockchainTransaction.amount);
-                    return addressBO.updateBalance(addressTo);
-                  }
+                  logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.to, blockchainTransaction.value);
+                  return addressBO.updateBalance(addressTo);
                 } else {
                   logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.to);
                 }
@@ -421,10 +421,8 @@ module.exports = function(dependencies) {
             p.push(addressBO.getByAddress(null, blockchainTransaction.from)
               .then(function(addressFrom) {
                 if (addressFrom) {
-                  if (rBlockchainTransaction.isConfirmed && !transactionRequest) {
-                    logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.from, blockchainTransaction.amount);
-                    return addressBO.updateBalance(addressFrom);
-                  }
+                  logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.from, blockchainTransaction.value);
+                  return addressBO.updateBalance(addressFrom);
                 } else {
                   logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.from);
                 }
@@ -436,7 +434,7 @@ module.exports = function(dependencies) {
             var newTransaction = {
               ownerId: addressInfo ? addressInfo.ownerId : null,
               ownerTransactionId: transactionRequest ? transactionRequest.ownerTransactionId : null,
-              amount: blockchainTransaction.amount,
+              amount: blockchainTransaction.value,
               gas: blockchainTransaction.gas,
               gasPrice: blockchainTransaction.gasPrice,
               isConfirmed: rBlockchainTransaction.isConfirmed,
@@ -448,7 +446,7 @@ module.exports = function(dependencies) {
                   isNotified: false
                 }
               },
-              transactionHash: blockchainTransaction.txid,
+              transactionHash: blockchainTransaction.hash,
               to: blockchainTransaction.to,
               from: blockchainTransaction.from,
               createdAt: dateHelper.getNow()

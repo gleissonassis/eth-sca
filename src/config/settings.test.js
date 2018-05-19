@@ -1,5 +1,5 @@
 module.exports = {
-    mongoUrl : 'mongodb://localhost/bitcoin-services-test',
+    mongoUrl : 'mongodb://localhost/eth-services-test',
     servicePort : 4100,
     isMongoDebug : true,
 
@@ -11,6 +11,6 @@ module.exports = {
     },
 
     daemonSettings: {
-      previousBlocksToCheck: 12
+      previousBlocksToCheck: 24
     }
 };

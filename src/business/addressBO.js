@@ -81,6 +81,9 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         chain
           .then(function() {
+            return daemonHelper.getBalance(address.address);
+          })
+          .then(function(r) {
             var addressEntity = {
               ownerId: ownerId,
               address: address.address,
@@ -88,7 +91,7 @@ module.exports = function(dependencies) {
               createdAt: dateHelper.getNow(),
               isEnabled: true,
               balance: {
-                available: 0,
+                available: r,
                 locked: 0
               }
             };
@@ -198,43 +201,6 @@ module.exports = function(dependencies) {
       });
     },
 
-    insertFunds: function(address, amount, balanceType) {
-      var self = this;
-
-      return new Promise(function(resolve, reject) {
-        var chain = mutexHelper.lock(address);
-        var unlock = null;
-
-        return chain
-          .then(function(r) {
-            unlock = r;
-            return self.getByAddress(null, address);
-          })
-          .then(function(r) {
-            if (balanceType === 1) {
-              logger.info('[AddressBO.insertFunds()] Depositing funds in the locked balance (address, amount)', address, amount);
-              r.balance.locked = new Decimal(r.balance.locked).plus(amount).toNumber();
-            } else {
-              logger.info('[AddressBO.insertFunds()] Depositing funds in the available balance (address, amount)', address, amount);
-              r.balance.available = new Decimal(r.balance.available).plus(amount).toNumber();
-            }
-
-            newAddress = modelParser.prepare(r);
-            newAddress.isEnabled = true;
-            newAddress.updatedAt = dateHelper.getNow();
-
-            logger.debug('[AddressBO.insertFunds()] New address balance', JSON.stringify(newAddress));
-            return addressDAO.update(newAddress);
-          })
-          .then(function(r) {
-            unlock();
-            return r;
-          })
-          .then(resolve)
-          .catch(reject);
-      });
-    },
-
     checkHasFunds: function(address, amount) {
       var self = this;
 
@@ -249,15 +215,12 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             logger.info('[AddressBO.checkHasFunds()] Checking if the wallet has funds', JSON.stringify(r));
-            var referenceBalance = balanceType === 1 ?
-                                                   r.balance.locked :
-                                                   r.balance.available;
-            if (referenceBalance < amount) {
+            if (r.balance.available >= amount) {
               logger.info('[AddressBO.checkHasFunds()] The wallet has funds', JSON.stringify(r));
-              return false;
+              return true;
             } else {
               logger.info('[AddressBO.checkHasFunds()] The wallet do not have funds', JSON.stringify(r));
-              return true;
+              return false;
             }
           })
           .then(function(r) {
@@ -270,7 +233,6 @@ module.exports = function(dependencies) {
     },
 
     updateBalance: function(address) {
-      var self = this;
       var chain = Promise.resolve();
 
       return chain
@@ -278,8 +240,12 @@ module.exports = function(dependencies) {
           return daemonHelper.getBalance(address.address, address.privateKey);
         })
         .then(function(r) {
-          address.balance.available = r;
-          return self.update(address);
+          var o = modelParser.prepare(address);
+          o.balance.available = r;
+          return addressDAO.update(o);
+        })
+        .then(function(r) {
+          return modelParser.clear(r);
         });
     },
   };

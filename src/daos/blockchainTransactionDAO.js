@@ -120,27 +120,5 @@ module.exports = function() {
         });
       });
     },
-
-    updateIsConfirmedFlag: function(confirmedBlockNumber) {
-      return new Promise(function(resolve, reject) {
-        logger.log('info', '[BlockchainTransactionDAO] Updating isConfirmedFlag from blockchain transactions ', confirmedBlockNumber);
-
-        model.updateMany({blockNumber: {$lte: confirmedBlockNumber}},
-          $.flatten({
-            isConfirmed: true,
-            updatedAt: new Date()
-          }, {multi: true}))
-        .then(function() {
-          logger.log('info', '[BlockchainTransactionDAO] The blockchain transactions has been updated succesfully');
-          resolve();
-        }).catch(function(error) {
-          logger.error('[BlockchainTransactionDAO] An error has ocurred while updating isConfirmedFlag', error);
-          reject({
-            status: 422,
-            message: error
-          });
-        });
-      });
-    }
   };
 };

@@ -1,142 +1,77 @@
 module.exports = function(dependencies) {
-  var client = dependencies.client;
+  var web3 = dependencies.web3;
 
   return {
-    getAddresses: function() {
+    createAddress: function() {
+      return web3.eth.accounts.create();
+    },
+
+    getBalance: function(address) {
+      return web3.eth.getBalance(address);
+    },
+
+    estimateGas: function(transaction) {
+      return web3.eth.estimateGas(transaction);
+    },
+
+    getGasPrice: function() {
+      return web3.eth.getGasPrice();
+    },
+
+    getBlockNumber: function() {
+      return web3.eth.getBlockNumber();
+    },
+
+    getTransactions: function(from, to) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
+        var transactions = [];
+
         return chain
           .then(function() {
-            return client.listReceivedByAddress(0, true);
+            var p = [];
+
+            for (var i = from; i <= to; i++) {
+              p.push(web3.eth.getBlock(i, true));
+            }
+
+            return Promise.all(p);
           })
           .then(function(r) {
-            var addresses = [];
-
-            r.forEach(function(item) {
-              addresses.push(item.address);
+            r.forEach(function(block) {
+              if (block && block.transactions) {
+                transactions = transactions.concat(block.transactions);
+              }
             });
-            addresses.sort();
-            return addresses;
+            return transactions;
           })
           .then(resolve)
           .catch(reject);
       });
     },
 
-    createAddress: function() {
-      return client.getNewAddress();
+    getTransaction: function(hash) {
+      return web3.eth.getTransaction(hash);
     },
 
-    getBalance: function() {
-      return client.getBalance();
-    },
-
-    estimateGas: function(transaction) {
-      return 0;
-    },
-
-    getGasPrice: function() {
-      return 0;
-    },
-
-    getBlockNumber: function() {
-      return client.getBlockCount();
-    },
-
-    getBlockHash: function(blocknumber) {
-      return client.getBlockHash(blocknumber);
-    },
-
-    listSinceBlock: function(blockash) {
-      return client.listSinceBlock(blockash);
-    },
-
-    estimateSmartFee: function(blocks) {
+    sendTransaction: function(transaction, from) {
       return new Promise(function(resolve, reject) {
-        return client.estimateSmartFee(blocks || 6)
+        var chain = Promise.resolve();
+
+        return chain
+          .then(function() {
+            return web3.eth.accounts.wallet.add(from);
+          })
           .then(function(r) {
-            if (!isNaN(r)) {
-              return r;
+            if (r) {
+              return web3.eth.sendTransaction(transaction);
             } else {
-              return 0;
+              return false;
             }
           })
           .then(resolve)
           .catch(reject);
       });
-    },
-
-    getTransactions: function(from, to) {
-      return null;
-    },
-
-    getTransaction: function(txid) {
-      return client.getTransaction(txid);
-    },
-
-    sendTransaction: function(address, amount, comment, toComment) {
-      return client.sendToAddress(address, amount, comment, toComment);
-    },
-
-    _throwDaemonError: function(r) {
-      switch (r.error.code) {
-        case -32601:
-          throw {
-            status: 500,
-            message: r.error.message,
-            details: r
-          };
-        case -32600:
-          throw {
-            status: 409,
-            code: 'INVALID_REQUEST',
-            message: r.error.message,
-            details: r
-          };
-        case -32000:
-          switch (r.error.data.application_code) {
-            case 4:
-              throw {
-                status: 404,
-                message: 'Requested object not found',
-                error: 'OBJECT_NOT_FOUND',
-                details: r
-              };
-            case 7:
-              throw {
-                status: 409,
-                message: 'Bad address',
-                error: 'ERROR_TRANSACTION_BAD_ADDRESS',
-                details: r
-              };
-            case 9:
-              throw {
-                status: 409,
-                message: 'Wrong amount',
-                error: 'ERROR_TRANSACTION_WRONG_AMOUNT',
-                details: r
-              };
-            case 17:
-              throw {
-                status: 409,
-                message: 'Transaction fee is too small',
-                error: 'ERROR_TRANSACTION_SMALL_FEE',
-                details: r
-              };
-            default:
-              throw {
-                status: 409,
-                message: 'An error has occurred while processing this transaction. ' + r.error.message,
-                details: r
-              };
-          }
-        default:
-          throw {
-            status: 500,
-            message: 'An expected error has occurred while processing',
-            details: r
-          };
-      }
     }
   };
 };

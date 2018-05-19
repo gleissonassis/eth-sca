@@ -6,7 +6,6 @@ var DAOFactory        = require('../../../src/daos/daoFactory');
 var HelperFactory     = require('../../../src/helpers/helperFactory');
 var chai              = require('chai');
 var sinon             = require('sinon');
-var Decimal           = require('decimal.js');
 var expect            = chai.expect;
 
 describe('Business > TransactionBO > ', function() {
