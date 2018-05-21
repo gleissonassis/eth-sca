@@ -1,7 +1,7 @@
 {
-  "name": "bitcoin-cdal",
+  "name": "eth-cdal",
   "version": "0.0.1",
-  "description": "CDAL is an abstraction layer for a CryptoNote coin daemon",
+  "description": "CDAL is an abstraction layer for a Ethereum daemon",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gleissonassis/bitcoin-cdal.git"
+    "url": "git+https://github.com/gleissonassis/eth-cdal.git"
   },
   "author": "Gleisson de Assis <gleisson.assis@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gleissonassis/bitcoin-cdal/issues"
+    "url": "https://github.com/gleissonassis/eth-cdal/issues"
   },
-  "homepage": "https://github.com/gleissonassis/bitcoin-cdal#readme",
+  "homepage": "https://github.com/gleissonassis/eth-cdal#readme",
   "devDependencies": {
     "chai": "^4.1.2",
     "eslint": "^4.6.1",

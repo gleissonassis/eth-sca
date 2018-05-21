@@ -15,7 +15,7 @@ module.exports = {
       minimumConfirmations: 6,
       minimumAddressPoolSize: 100,
       currentBlockNumber: 1000,
-      transactionNotificationAPI: util.format('http://%s/v1/transactions/notifications', process.env.NOTIFICATION_ADDRESS || 'localhost:3001')
+      transactionNotificationAPI: process.env.NOTIFICATION_API_ADDRESS || 'http://localhost:3000/v1/transactions/notifications'
     },
 
     mutex: {
