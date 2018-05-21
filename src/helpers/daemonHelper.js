@@ -3,7 +3,10 @@ module.exports = function(dependencies) {
 
   return {
     createAddress: function() {
-      return web3.eth.accounts.create();
+      return new Promise(function(resolve) {
+        var newAddress = web3.eth.accounts.create();
+        resolve(newAddress);
+      });
     },
 
     getBalance: function(address) {
