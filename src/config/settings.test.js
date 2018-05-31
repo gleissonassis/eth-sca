@@ -11,6 +11,6 @@ module.exports = {
     },
 
     daemonSettings: {
-      previousBlocksToCheck: 24
+      previousBlocksToCheck: 12
     }
 };

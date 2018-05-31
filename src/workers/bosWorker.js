@@ -104,11 +104,14 @@ module.exports = function(dependencies) {
             return self.parseTransactionsFromDaemon(r, currentBlockNumber);
           })
           .then(function() {
+
+            logger.info(currentBlockNumber, blockCount, currentBlockNumber > blockCount);
             currentBlockNumber += settings.daemonSettings.previousBlocksToCheck;
 
             if (currentBlockNumber > blockCount) {
               currentBlockNumber = blockCount;
             }
+            logger.info('[BOSWorker] Updating currentBlockNumber to ', currentBlockNumber);
 
             return configurationBO.update({key:'currentBlockNumber', value: currentBlockNumber});
           })

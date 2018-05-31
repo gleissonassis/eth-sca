@@ -1,6 +1,7 @@
 var DaemonHelper      = require('../../../src/helpers/daemonHelper');
 var TransactionBO     = require('../../../src/business/transactionBO');
 var AddressBO         = require('../../../src/business/addressBO');
+var ConfigurationBO   = require('../../../src/business/ConfigurationBO');
 var BOSWorker         = require('../../../src/workers/bosWorker');
 var chai              = require('chai');
 var sinon             = require('sinon');
@@ -10,14 +11,29 @@ describe('Workers > BOSWorker', function() {
   var daemonHelper = new DaemonHelper({});
   var transactionBO = new TransactionBO({});
   var addressBO = new AddressBO({});
+  var configurationBO = new ConfigurationBO({});
 
   var bosWorker = new BOSWorker({
     daemonHelper: daemonHelper,
     transactionBO: transactionBO,
-    addressBO: addressBO
+    addressBO: addressBO,
+    configurationBO: configurationBO
   });
 
   it('should run', function() {
+    var getByKeyStub = sinon.stub(configurationBO, 'getByKey');
+    getByKeyStub
+      .withArgs('currentBlockNumber')
+      .returns(Promise.resolve({
+        key: 'currentBlockNumber',
+        value: 12
+      }));
+
+    var updateKeyStub = sinon.stub(configurationBO, 'update');
+    updateKeyStub
+      .withArgs({key:'currentBlockNumber', value: 24})
+      .returns(Promise.resolve());
+
     var getAllStub = sinon.stub(addressBO, 'getAll');
     getAllStub
       .withArgs()
@@ -81,7 +97,7 @@ describe('Workers > BOSWorker', function() {
 
     var getBlockHashStub = sinon.stub(daemonHelper, 'getTransactions');
     getBlockHashStub
-      .withArgs(24, 36)
+      .withArgs(0, 12)
       .returns(Promise.resolve(transactions));
 
     var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
@@ -100,6 +116,7 @@ describe('Workers > BOSWorker', function() {
     return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(r).to.be.true;
+        expect(getByKeyStub.callCount).to.be.equal(1);
         expect(getAllStub.callCount).to.be.equal(1);
         expect(getBlockNumberStub.callCount).to.be.equal(1);
         expect(parseTransactionStub.callCount).to.be.equal(3);
@@ -107,10 +124,19 @@ describe('Workers > BOSWorker', function() {
         getAllStub.restore();
         getBlockNumberStub.restore();
         parseTransactionStub.restore();
+        getByKeyStub.restore();
       });
   });
 
   it('should not fail when the daemon returns an error (getBlockCount)', function() {
+    var getByKeyStub = sinon.stub(configurationBO, 'getByKey');
+    getByKeyStub
+      .withArgs('currentBlockNumber')
+      .returns(Promise.resolve({
+        key: 'currentBlockNumber',
+        value: 12
+      }));
+
     var getAllStub = sinon.stub(addressBO, 'getAll');
     getAllStub
       .withArgs()
