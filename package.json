@@ -32,6 +32,7 @@
     "var": "^0.3.2"
   },
   "dependencies": {
+    "abi-decoder": "^1.1.0",
     "body-parser": "^1.18.2",
     "cors": "^2.8.4",
     "decimal.js": "^10.0.0",

@@ -61,6 +61,21 @@ module.exports = function() {
       });
     },
 
+    getContractAddresses: function() {
+      return new Promise(function(resolve, reject) {
+        logger.info('[AddressDAO] Getting contract addresses', filter);
+
+        model.distinct('erc20.contractAddress')
+          .then(function(items) {
+            logger.info('[AddressDAO] %d items were returned', items.length);
+            resolve(items);
+          }).catch(function(erro) {
+            logger.error('[AddressDAO] An error has ocurred while getting contract addresses from database', erro);
+            reject(erro);
+          });
+      });
+    },
+
     getById: function(id) {
       var self = this;
       return new Promise(function(resolve, reject) {

@@ -449,6 +449,7 @@ module.exports = function(dependencies) {
               transactionHash: blockchainTransaction.hash,
               to: blockchainTransaction.to,
               from: blockchainTransaction.from,
+              input: blockchainTransaction.input,
               createdAt: dateHelper.getNow()
             };
             logger.info('[TransactionBO] Saving the transaction', JSON.stringify(newTransaction));

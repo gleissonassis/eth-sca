@@ -549,8 +549,25 @@ describe('Business > TransactionBO > ', function() {
         });
     });
 
-    it('parseTransaction - confirmed transaction not found and without request', function() {
+    it('parseTransaction - should parse a new token mint transaction', function() {
       var now = new Date();
+
+      var parseInputDataStub = sinon.stub(daemonHelper, 'parseTokenInputData');
+      parseInputDataStub
+        .withArgs('0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8')
+        .returns(Promise.resolve({
+          method: 'mint',
+          params: {
+            to: '0xa933582bd31552b04790131dd885c2c7bee0f0e5',
+            amount: 1000
+          }
+        }));
+
+      var getContractAddressesStub = sinon.stub(addressBO, 'getContractAddresses');
+      getContractAddressesStub
+        .withArgs()
+        .returns(Promise.resolve(['contractAddress']));
+
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
         .withArgs()
@@ -579,11 +596,11 @@ describe('Business > TransactionBO > ', function() {
           gas: 51505,
           gasPrice: 1000000000,
           hash: 'hash',
-          input: '0x',
+          input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
           nonce: 3,
-          to: 'to',
+          to: 'contractAddress',
           transactionIndex: 16,
-          value: 10000000000,
+          value: '0',
           createdAt: now,
           isConfirmed: true
         })
@@ -595,37 +612,39 @@ describe('Business > TransactionBO > ', function() {
           gas: 51505,
           gasPrice: 1000000000,
           hash: 'hash',
-          input: '0x',
+          input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
           nonce: 3,
           to: 'to',
           transactionIndex: 16,
-          value: 10000000000,
+          value: 0,
           isConfirmed: true,
           createdAt: now,
         }));
 
-      var updateBalance = sinon.stub(addressBO, 'updateBalance');
-      updateBalance
-        .withArgs({address: 'to', privateKey: 'privateKey'});
-
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
+
       getByAddressStub
-        .withArgs(null, 'to')
+        .withArgs(null, '0xa933582bd31552b04790131dd885c2c7bee0f0e5')
         .returns(Promise.resolve({
-          address: 'to',
-          ownerId: 'ownerId'
+          address: '0xa933582bd31552b04790131dd885c2c7bee0f0e5',
+          ownerId: 'ownerId',
+          privateKey: 'privateKeyToMint'
         }));
 
       getByAddressStub
         .withArgs(null, 'from')
         .returns(Promise.resolve(null));
 
+      var updateBalance = sinon.stub(addressBO, 'updateBalance');
+      updateBalance
+        .withArgs({address: '0xa933582bd31552b04790131dd885c2c7bee0f0e5', privateKey: 'privateKeyToMin'});
+
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
         .withArgs({
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: 10000000000,
+          amount: 0,
           gas: 51505,
           gasPrice: 1000000000,
           isConfirmed: true,
@@ -638,8 +657,9 @@ describe('Business > TransactionBO > ', function() {
             }
           },
           transactionHash: 'hash',
-          to: 'to',
+          to: 'contractAddress',
           from: 'from',
+          input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
           timestamp: 1525944061,
           createdAt: now
         })
@@ -647,7 +667,7 @@ describe('Business > TransactionBO > ', function() {
           _id: 'ID',
           ownerId: 'ownerId',
           ownerTransactionId: null,
-          amount: 10000000000,
+          amount: 0,
           gas: 51505,
           gasPrice: 1000000000,
           isConfirmed: true,
@@ -660,8 +680,9 @@ describe('Business > TransactionBO > ', function() {
             }
           },
           transactionHash: 'hash',
-          to: 'to',
+          to: 'contractAddress',
           from: 'from',
+          input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
           createdAt: now
         }));
 
@@ -672,11 +693,11 @@ describe('Business > TransactionBO > ', function() {
         gas: 51505,
         gasPrice: 1000000000,
         hash: 'hash',
-        input: '0x',
+        input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
         nonce: 3,
-        to: 'to',
+        to: 'contractAddress',
         transactionIndex: 16,
-        value: 10000000000
+        value: '0'
       }, 3237378)
         .then(function(r){
           expect(r).to.be.deep.equal({
@@ -687,11 +708,11 @@ describe('Business > TransactionBO > ', function() {
             gas: 51505,
             gasPrice: 1000000000,
             hash: 'hash',
-            input: '0x',
             nonce: 3,
-            to: 'to',
+            to: 'contractAddress',
+            input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
             transactionIndex: 16,
-            value: 10000000000,
+            value: '0',
             createdAt: now,
             isConfirmed: true
           });

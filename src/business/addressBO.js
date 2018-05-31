@@ -48,6 +48,11 @@ module.exports = function(dependencies) {
       });
     },
 
+    getContractAddresses: function() {
+      logger.info('[AddressBO] Getting contract addresses from database');
+      return this.getContractAddresses();
+    },
+
     getFreeAddresses: function() {
       logger.info('[AddressBO] Getting free addresses from database');
       return this.getAll({

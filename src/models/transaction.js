@@ -63,6 +63,10 @@ module.exports = function(){
       type: String,
       required: true
     },
+    input: {
+      type: String,
+      required: false
+    },
     createdAt: {
       type: Date,
       required: false,
