@@ -216,7 +216,7 @@ module.exports = function(dependencies) {
           .then(function(r) {
             transactionRequest._id = r._id;
             logger.info('[TransactionBO] Sending the transaction to the blockchain', JSON.stringify(transactionRequest), JSON.stringify(ethTransaction));
-            return daemonHelper.sendTransaction(ethTransaction, address);
+            return daemonHelper.sendTransaction(ethTransaction, address.privateKey);
           })
           .then(function(r) {
             logger.debug('[TransactionBO] Return of blockchain', JSON.stringify(r));

@@ -57,13 +57,13 @@ module.exports = function(dependencies) {
       return web3.eth.getTransaction(hash);
     },
 
-    sendTransaction: function(transaction, from) {
+    sendTransaction: function(transaction, privateKey) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
         return chain
           .then(function() {
-            return web3.eth.accounts.wallet.add(from);
+            return web3.eth.accounts.wallet.add(privateKey);
           })
           .then(function(r) {
             if (r) {

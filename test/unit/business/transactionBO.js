@@ -113,7 +113,7 @@ describe('Business > TransactionBO > ', function() {
             from: 'from',
             to: 'to',
             value: 100000,
-            gas: 31660 * 1000000000
+            gas: 31660
         }, 'privateKey')
         .returns(Promise.resolve({
           blockHash: 'blockHash',
@@ -285,6 +285,11 @@ describe('Business > TransactionBO > ', function() {
         .withArgs(null, 'from')
         .returns(Promise.resolve(null));
 
+      var updateBalanceStub = sinon.stub(addressBO, 'updateBalance');
+      updateBalanceStub
+        .withArgs('to')
+        .returns(Promise.resolve());
+
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
         .withArgs({
@@ -366,6 +371,7 @@ describe('Business > TransactionBO > ', function() {
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
+          expect(updateBalanceStub.callCount).to.be.equal(1);
           expect(getByAddressStub.callCount).to.be.equal(2);
 
           getNowStub.restore();
@@ -374,6 +380,7 @@ describe('Business > TransactionBO > ', function() {
           saveStub.restore();
           transactionSaveStub.restore();
           getByAddressStub.restore();
+          updateBalanceStub.restore();
         });
     });
 
