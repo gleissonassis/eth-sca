@@ -158,7 +158,6 @@ module.exports = function(dependencies) {
     },
 
     save: function(entity) {
-
       return new Promise(function(resolve, reject) {
         var chain = mutexHelper.lock('transaction/' + entity.from);
         var unlock = null;
@@ -166,11 +165,7 @@ module.exports = function(dependencies) {
         var estimatedGas = 0;
         var gasPrice = 0;
         var address = null;
-        var ethTransaction = {
-            from: entity.from,
-            to: entity.to,
-            value: entity.amount
-        };
+        var ethTransaction = daemonHelper.generateTransaction(entity);
         var amountToCheck = 0;
 
         return chain
@@ -180,7 +175,7 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             address = r;
-            logger.info('[TransactionBO.save()] Estimating the fee');
+            logger.info('[TransactionBO.save()] Estimating the fee', JSON.stringify(ethTransaction));
             return daemonHelper.estimateGas(ethTransaction)
               .then(function(r) {
                 estimatedGas = r;
@@ -195,7 +190,7 @@ module.exports = function(dependencies) {
             ethTransaction.gas = estimatedGas;
             logger.info('[TransactionBO.save()] Estimated fee', r);
             amountToCheck = new Decimal(r).plus(entity.amount).toNumber();
-            return addressBO.checkHasFunds(entity.from, amountToCheck, 0);
+            return addressBO.checkHasFunds(entity.from, amountToCheck);
           })
           .then(function(r) {
             if (!r) {
@@ -323,30 +318,102 @@ module.exports = function(dependencies) {
               var p = [];
               logger.info('[TransactionBO] Updating confirmation flag and addresses balance', blockchainTransaction.hash);
               p.push(transactionDAO.updateIsConfirmedFlag(blockchainTransaction.hash));
-              p.push(addressBO.getByAddress(null, blockchainTransaction.to)
-                .then(function(addressTo) {
-                  if (addressTo) {
-                    logger.info('[TransactionBO] Updating to address balance', addressTo.address);
-                    addressBO.updateBalance(addressTo);
-                  }
-                })
-              );
-              p.push(addressBO.getByAddress(null, blockchainTransaction.from)
-                .then(function(addressFrom) {
-                  if (addressFrom) {
-                    logger.info('[TransactionBO] Updating from address balance ', addressTo.address);
-                    addressBO.updateBalance(addressFrom);
-                  }
-                })
-              );
 
-              return Promise.all(p);
+              logger.info('[TransactionBO] Updating the balances in addresses involved at this transaction', blockchainTransaction.hash);
+              p.push(self.updateBalancesFromBlockchainTransaction(rBlockchainTransaction));
+
             } else {
               logger.info('[TransactionBO] There is nothing to update (balance and isConfirmed flag)', blockchainTransaction.hash);
             }
           })
           .then(function() {
             return modelParser.clear(rBlockchainTransaction);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    updateBalancesFromBlockchainTransaction: function(blockchainTransaction) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+        var contractAddressesMap = {};
+
+        chain
+          .then(function() {
+            logger.info('[TransactionBO] Getting contract addresses from database');
+            return addressBO.getContractAddresses();
+          })
+          .then(function(r) {
+            var p = [];
+            r.forEach(function(contractAddress) {
+              contractAddressesMap[contractAddress] = true;
+            });
+
+            logger.info('[TransactionBO] Contract addresses mapping ', JSON.stringify(contractAddressesMap));
+
+            if (blockchainTransaction.isConfirmed) {
+              logger.info('[TransactionBO] Current transaction is CONFIRMED', JSON.stringify(blockchainTransaction));
+
+              if (contractAddressesMap[blockchainTransaction.to]) {
+                logger.info('[TransactionBO] This transaction was sent to a mapped contract address', blockchainTransaction.to);
+                logger.info('[TransactionBO] The input data will be parsed', blockchainTransaction.input);
+
+                p.push(daemonHelper.parseTokenInputData(blockchainTransaction.input)
+                  .then(function(r) {
+                    logger.info('[TransactionBO] Input data parsing result', JSON.stringify(r));
+
+                    if (r) {
+                      switch (r.method) {
+                        case 'mint':
+                        case 'transfer':
+                        case 'transferPreSigned':
+                          logger.info('[TransactionBO] Trying to find this address at database ', r.params.to);
+                          return addressBO.getByAddress(null, r.params.to);
+                          break;
+                        default:
+                          return Promise.resolve(null);
+                      }
+                    } else {
+                      return Promise.resolve(null);
+                    }
+                  })
+                  .then(function(addressTo) {
+                    if (addressTo) {
+                      logger.info('[TransactionBO] Updating the balance from blockchain contract transaction', addressTo.to, blockchainTransaction.to);
+                      return addressBO.updateBalance(addressTo);
+                    } else {
+                      logger.info('[TransactionBO] There is no address at the database for the specified contract transaction', blockchainTransaction.to);
+                    }
+                  })
+                );
+              } else {
+                logger.info('[TransactionBO] Trying to find the addresses at database', blockchainTransaction.to);
+                p.push(addressBO.getByAddress(null, blockchainTransaction.to)
+                  .then(function(addressTo) {
+                    if (addressTo) {
+                      logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.to, blockchainTransaction.value);
+                      return addressBO.updateBalance(addressTo);
+                    } else {
+                      logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.to);
+                    }
+                  }));
+              }
+
+              p.push(addressBO.getByAddress(null, blockchainTransaction.from)
+                .then(function(addressFrom) {
+                  if (addressFrom) {
+                    logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.from, blockchainTransaction.value);
+                    return addressBO.updateBalance(addressFrom);
+                  } else {
+                    logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.from);
+                  }
+                }));
+            } else {
+              logger.info('[TransactionBO] Current transaction is not confirmed', JSON.stringify(blockchainTransaction));
+            }
+
+            return Promise.all(p);
           })
           .then(resolve)
           .catch(reject);
@@ -384,17 +451,18 @@ module.exports = function(dependencies) {
                 blockchainTransaction.hash);
             }
 
+            console.log('AAAAa', blockchainTransaction);
             var o = {
               blockHash: blockchainTransaction.blockHash,
               blockNumber: blockchainTransaction.blockNumber,
               from: blockchainTransaction.from,
               to: blockchainTransaction.to,
-              value: blockchainTransaction.value,
+              value: new Decimal(blockchainTransaction.value).toNumber(),
               gas: blockchainTransaction.gas,
               gasPrice: blockchainTransaction.gasPrice,
               hash: blockchainTransaction.hash,
               input: blockchainTransaction.input,
-              nonce: blockchainTransaction.nonce,
+              nonce: blockchainTransaction.nonce ? new Decimal(blockchainTransaction.nonce).toNumber() : blockchainTransaction.nonce,
               transactionIndex: blockchainTransaction.transactionIndex,
               isConfirmed: (currentBlockNumber - blockchainTransaction.blockNumber) >= minimumConfirmations,
               createdAt: dateHelper.getNow(),
@@ -405,36 +473,13 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             rBlockchainTransaction = r;
-            var p = [];
-
-            logger.info('[TransactionBO] Trying to find the addresses at database', blockchainTransaction.to);
-            p.push(addressBO.getByAddress(null, blockchainTransaction.to)
-              .then(function(addressTo) {
-                if (addressTo) {
-                  logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.to, blockchainTransaction.value);
-                  return addressBO.updateBalance(addressTo);
-                } else {
-                  logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.to);
-                }
-              }));
-
-            p.push(addressBO.getByAddress(null, blockchainTransaction.from)
-              .then(function(addressFrom) {
-                if (addressFrom) {
-                  logger.info('[TransactionBO] Updating the balance from blockchain transaction', blockchainTransaction.from, blockchainTransaction.value);
-                  return addressBO.updateBalance(addressFrom);
-                } else {
-                  logger.info('[TransactionBO] There is no address at the database for the specified transaction', blockchainTransaction.from);
-                }
-              }));
-
-            return Promise.all(p);
+            return self.updateBalancesFromBlockchainTransaction(r);
           })
           .then(function() {
             var newTransaction = {
               ownerId: addressInfo ? addressInfo.ownerId : null,
               ownerTransactionId: transactionRequest ? transactionRequest.ownerTransactionId : null,
-              amount: blockchainTransaction.value,
+              amount: new Decimal(blockchainTransaction.value).toNumber(),
               gas: blockchainTransaction.gas,
               gasPrice: blockchainTransaction.gasPrice,
               isConfirmed: rBlockchainTransaction.isConfirmed,

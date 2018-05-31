@@ -1,4 +1,5 @@
 var Decimal         = require('decimal.js');
+var Tx              = require('ethereumjs-tx');
 
 module.exports = function(dependencies) {
   var web3 = dependencies.web3;
@@ -36,6 +37,11 @@ module.exports = function(dependencies) {
 
     getBalance: function(address) {
       return web3.eth.getBalance(address);
+    },
+
+    getTokenBalance: function(address, contractAddress) {
+      var token = new web3.eth.Contract(erc20Interface.abi, contractAddress);
+      return token.methods.balanceOf(address).call();
     },
 
     estimateGas: function(transaction) {
@@ -83,6 +89,21 @@ module.exports = function(dependencies) {
     },
 
     sendTransaction: function(transaction, privateKey) {
+      if (transaction.token) {
+        switch (transaction.token.method.name) {
+          case 'mint':
+            return this.sendMintTransaction(transaction, privateKey);
+          case 'transfer':
+            return this.sendMintTransaction(transaction, privateKey);
+          default:
+
+        }
+      } else {
+        return this.sendETHTransaction(transaction, privateKey);
+      }
+    },
+
+    sendETHTransaction: function(transaction, privateKey) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -100,6 +121,102 @@ module.exports = function(dependencies) {
           .then(resolve)
           .catch(reject);
       });
+    },
+
+    sendMintTransaction: function(transaction, privateKey) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            return web3.eth.getTransactionCount(transaction.from);
+          })
+          .then(function(count) {
+            var tx = new Tx(this.generateMintTransaction(transaction, count));
+            var privKey = new Buffer(privateKey.startsWith('0x') ?
+                                        privateKey.substring(2) :
+                                        privateKey, 'hex');
+            tx.sign(privKey);
+            var serializedTx = tx.serialize();
+
+            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    sendTransferTransaction: function(transaction, privateKey) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            return web3.eth.getTransactionCount(transaction.from);
+          })
+          .then(function(count) {
+            var tx = new Tx(this.generateMintTransaction(transaction, count));
+            var privKey = new Buffer(privateKey.startsWith('0x') ?
+                                        privateKey.substring(2) :
+                                        privateKey, 'hex');
+            tx.sign(privKey);
+            var serializedTx = tx.serialize();
+
+            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    generateTransaction: function(transaction) {
+      console.log(transaction);
+      if (transaction.token) {
+        switch (transaction.token.method.name) {
+          case 'mint':
+            return this.generateMintTransaction(transaction);
+          case 'transfer':
+            return this.generateTransferTransaction(transaction);
+          default:
+
+        }
+      } else {
+        return this.generateETHTransaction(transaction);
+      }
+    },
+
+    generateETHTransaction: function(transaction) {
+      return {
+          from: transaction.from,
+          to: transaction.to,
+          value: transaction.amount
+      };
+    },
+
+    generateMintTransaction: function(transaction, count) {
+      var token = new web3.eth.Contract(mintableTokenInterface.abi, transaction.token.contractAddress);
+      var gasLimit = 3000000;
+      return {
+            from: transaction.from,
+            nonce: web3.utils.toHex(count),
+            gasLimit: web3.utils.toHex(gasLimit),
+            to: transaction.token.contractAddress,
+            value: '0x0',
+            data: token.methods.mint(transaction.token.method.params.to, transaction.token.method.params.amount).encodeABI(),
+        };
+    },
+
+    generateTransferTransaction: function(transaction, count) {
+      var token = new web3.eth.Contract(erc20Interface.abi, transaction.token.contractAddress);
+      var gasLimit = 3000000;
+      return {
+            from: transaction.from,
+            nonce: web3.utils.toHex(count),
+            gasLimit: web3.utils.toHex(gasLimit),
+            to: transaction.token.contractAddress,
+            value: '0x0',
+            data: token.methods.transfer(transaction.token.method.params.to, transaction.token.method.params.amount).encodeABI(),
+        };
     },
 
     parseTokenTransferPreSignedMethod: function(decoded) {

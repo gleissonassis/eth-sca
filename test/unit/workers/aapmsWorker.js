@@ -1,4 +1,4 @@
-var DaemonHelper      = require('../../../src/helpers/daemonHelper');
+var HelperFactory     = require('../../../src/helpers/helperFactory');
 var AddressBO         = require('../../../src/business/addressBO');
 var ConfigurationBO   = require('../../../src/business/configurationBO');
 var AAPMSWorker       = require('../../../src/workers/aapmsWorker');
@@ -7,7 +7,7 @@ var sinon             = require('sinon');
 var expect            = chai.expect;
 
 describe('Workers > AAPMSWorker > ', function() {
-  var daemonHelper = new DaemonHelper({});
+  var daemonHelper = HelperFactory.getHelper('daemon');
   var addressBO = new AddressBO({});
   var configurationBO = new ConfigurationBO({});
 

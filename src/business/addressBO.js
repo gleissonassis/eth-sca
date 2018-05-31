@@ -50,7 +50,7 @@ module.exports = function(dependencies) {
 
     getContractAddresses: function() {
       logger.info('[AddressBO] Getting contract addresses from database');
-      return this.getContractAddresses();
+      return addressDAO.getContractAddresses();
     },
 
     getFreeAddresses: function() {
@@ -61,7 +61,7 @@ module.exports = function(dependencies) {
       }, {}, '+createdAt');
     },
 
-    createAddressFromDaemon: function(ownerId, erc20ContractAddress) {
+    createAddressFromDaemon: function(ownerId, tokenContractAddress) {
       var self = this;
       var chain = Promise.resolve();
 
@@ -73,17 +73,16 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             logger.info('[AddressBO] Saving the address and linking to ownerId', ownerId);
-            return self.registerAddressFromDaemon(ownerId, r, erc20ContractAddress);
+            return self.registerAddressFromDaemon(ownerId, r, tokenContractAddress);
           })
           .then(resolve)
           .catch(reject);
       });
     },
 
-    registerAddressFromDaemon: function(ownerId, address, erc20ContractAddress) {
-      var chain = Promise.resolve();
-
+    registerAddressFromDaemon: function(ownerId, address, tokenContractAddress) {
       return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
         chain
           .then(function() {
             return daemonHelper.getBalance(address.address);
@@ -101,9 +100,9 @@ module.exports = function(dependencies) {
               }
             };
 
-            if (erc20ContractAddress) {
-              addressEntity.erc20 = {
-                contractAddress: erc20ContractAddress,
+            if (tokenContractAddress) {
+              addressEntity.token = {
+                contractAddress: tokenContractAddress,
                 balance: {
                   available: 0,
                   locked: 0
@@ -123,7 +122,7 @@ module.exports = function(dependencies) {
       });
     },
 
-    createAddress: function(ownerId, erc20ContractAddress) {
+    createAddress: function(ownerId, tokenContractAddress) {
       var self = this;
       var chain = Promise.resolve();
       var freeAddress = null;
@@ -150,9 +149,9 @@ module.exports = function(dependencies) {
             freeAddress.ownerId = ownerId;
             freeAddress.updatedAt = dateHelper.getNow();
 
-            if (erc20ContractAddress) {
-              freeAddress.erc20 = {
-                contractAddress: erc20ContractAddress,
+            if (tokenContractAddress) {
+              freeAddress.token = {
+                contractAddress: tokenContractAddress,
                 balance: {
                   available: 0,
                   locked: 0
@@ -173,7 +172,7 @@ module.exports = function(dependencies) {
       });
     },
 
-    getByAddress: function(ownerId, address, erc20ContractAddress) {
+    getByAddress: function(ownerId, address, tokenContractAddress) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
@@ -185,8 +184,8 @@ module.exports = function(dependencies) {
           filter.ownerId = ownerId;
         }
 
-        if (erc20ContractAddress) {
-          filter['erc20.contractAddress'] = erc20ContractAddress;
+        if (tokenContractAddress) {
+          filter['token.contractAddress'] = tokenContractAddress;
         }
 
         logger.info('[AddressBO] Getting an address by ownerId/address', ownerId, address);
@@ -230,15 +229,15 @@ module.exports = function(dependencies) {
       });
     },
 
-    checkHasFunds: function(address, amount, erc20ContractAddress) {
-      if (erc20ContractAddress) {
-        return this.checkHasERC20Funds(address, erc20ContractAddress, amount);
+    checkHasFunds: function(address, amount, tokenContractAddress) {
+      if (tokenContractAddress) {
+        return this.checkHasTokenFunds(address, tokenContractAddress, amount);
       } else {
         return this.checkHasETHFunds(address, amount);
       }
     },
 
-    checkHasERC20Funds: function(address, erc20ContractAddress, amount) {
+    checkHasTokenFunds: function(address, tokenContractAddress, amount) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
@@ -248,15 +247,15 @@ module.exports = function(dependencies) {
         return chain
           .then(function(r) {
             unlock = r;
-            return self.getByAddress(null, address, erc20ContractAddress);
+            return self.getByAddress(null, address, tokenContractAddress);
           })
           .then(function(r) {
-            logger.info('[AddressBO.checkHasERC20Funds()] Checking if the wallet has funds', JSON.stringify(r));
-            if (r.erc20.available >= amount) {
-              logger.info('[AddressBO.checkHasERC20Funds()] The wallet has funds', JSON.stringify(r));
+            logger.info('[AddressBO.checkHasTokenFunds()] Checking if the wallet has funds', JSON.stringify(r));
+            if (r.token.available >= amount) {
+              logger.info('[AddressBO.checkHasTokenFunds()] The wallet has funds', JSON.stringify(r));
               return true;
             } else {
-              logger.info('[AddressBO.checkHasERC20Funds()] The wallet do not have funds', JSON.stringify(r));
+              logger.info('[AddressBO.checkHasTokenFunds()] The wallet do not have funds', JSON.stringify(r));
               return false;
             }
           })
@@ -302,14 +301,31 @@ module.exports = function(dependencies) {
 
     updateBalance: function(address) {
       var chain = Promise.resolve();
+      var ethBalance = null;
+      var tokenBalance = null;
 
       return chain
         .then(function() {
-          return daemonHelper.getBalance(address.address, address.privateKey);
+          return daemonHelper.getBalance(address.address);
         })
         .then(function(r) {
+          ethBalance = r;
+
+          if (address.token && address.token.contractAddress) {
+            return daemonHelper.getTokenBalance(address.address, address.token.contractAddress);
+          } else {
+            return null;
+          }
+        })
+        .then(function(r) {
+          tokenBalance = r;
           var o = modelParser.prepare(address);
-          o.balance.available = r;
+          o.balance.available = ethBalance;
+
+          if (tokenBalance) {
+            o.token.balance.available = tokenBalance;
+          }
+
           return addressDAO.update(o);
         })
         .then(function(r) {

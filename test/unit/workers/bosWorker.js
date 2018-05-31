@@ -1,4 +1,4 @@
-var DaemonHelper      = require('../../../src/helpers/daemonHelper');
+var HelperFactory     = require('../../../src/helpers/helperFactory');
 var TransactionBO     = require('../../../src/business/transactionBO');
 var AddressBO         = require('../../../src/business/addressBO');
 var ConfigurationBO   = require('../../../src/business/ConfigurationBO');
@@ -8,7 +8,7 @@ var sinon             = require('sinon');
 var expect            = chai.expect;
 
 describe('Workers > BOSWorker', function() {
-  var daemonHelper = new DaemonHelper({});
+  var daemonHelper = HelperFactory.getHelper('daemon');
   var transactionBO = new TransactionBO({});
   var addressBO = new AddressBO({});
   var configurationBO = new ConfigurationBO({});

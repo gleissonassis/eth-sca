@@ -65,7 +65,7 @@ module.exports = function() {
       return new Promise(function(resolve, reject) {
         logger.info('[AddressDAO] Getting contract addresses', filter);
 
-        model.distinct('erc20.contractAddress')
+        model.distinct('token.contractAddress')
           .then(function(items) {
             logger.info('[AddressDAO] %d items were returned', items.length);
             resolve(items);

@@ -167,8 +167,6 @@ describe('Business > TransactionBO > ', function() {
         }));
 
       var updateBalance = sinon.stub(addressBO, 'updateBalance');
-      updateBalance
-        .withArgs({address: 'from', privateKey: 'privateKey'});
 
       return transactionBO.save({
         ownerId: 'ownerId',
@@ -218,6 +216,12 @@ describe('Business > TransactionBO > ', function() {
 
     it('parseTransaction - transaction not found but with request', function() {
       var now = new Date();
+
+      var getContractAddressesStub = sinon.stub(addressBO, 'getContractAddresses');
+      getContractAddressesStub
+        .withArgs()
+        .returns(Promise.resolve([]));
+
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
         .withArgs()
@@ -274,21 +278,7 @@ describe('Business > TransactionBO > ', function() {
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-      getByAddressStub
-        .withArgs(null, 'to')
-        .returns(Promise.resolve({
-          address: 'to',
-          ownerId: 'ownerId'
-        }));
-
-      getByAddressStub
-        .withArgs(null, 'from')
-        .returns(Promise.resolve(null));
-
       var updateBalanceStub = sinon.stub(addressBO, 'updateBalance');
-      updateBalanceStub
-        .withArgs('to')
-        .returns(Promise.resolve());
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
@@ -368,11 +358,12 @@ describe('Business > TransactionBO > ', function() {
 
           expect(getNowStub.callCount).to.be.equal(2);
           expect(getAll.callCount).to.be.equal(1);
+          expect(getContractAddressesStub.callCount).to.be.equal(1);
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(updateBalanceStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(2);
+          expect(updateBalanceStub.callCount).to.be.equal(0);
+          expect(getByAddressStub.callCount).to.be.equal(0);
 
           getNowStub.restore();
           getAll.restore();
@@ -381,11 +372,18 @@ describe('Business > TransactionBO > ', function() {
           transactionSaveStub.restore();
           getByAddressStub.restore();
           updateBalanceStub.restore();
+          getContractAddressesStub.restore();
         });
     });
 
     it('parseTransaction - transaction not found and without request', function() {
       var now = new Date();
+
+      var getContractAddressesStub = sinon.stub(addressBO, 'getContractAddresses');
+      getContractAddressesStub
+        .withArgs()
+        .returns(Promise.resolve([]));
+
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
         .withArgs()
@@ -440,21 +438,8 @@ describe('Business > TransactionBO > ', function() {
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
-      getByAddressStub
-        .withArgs(null, 'to')
-        .returns(Promise.resolve({
-          address: 'to',
-          ownerId: 'ownerId',
-          privateKey: 'privateKey'
-        }));
+      var updateBalanceStub = sinon.stub(addressBO, 'updateBalance');
 
-      var updateBalance = sinon.stub(addressBO, 'updateBalance');
-      updateBalance
-        .withArgs({address: 'to', privateKey: 'privateKey'});
-
-      getByAddressStub
-        .withArgs(null, 'from')
-        .returns(Promise.resolve(null));
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
@@ -534,10 +519,12 @@ describe('Business > TransactionBO > ', function() {
 
           expect(getNowStub.callCount).to.be.equal(2);
           expect(getAll.callCount).to.be.equal(1);
+          expect(getContractAddressesStub.callCount).to.be.equal(1);
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(2);
+          expect(getByAddressStub.callCount).to.be.equal(0);
+          expect(updateBalanceStub.callCount).to.be.equal(0);
 
           getNowStub.restore();
           getAll.restore();
@@ -545,7 +532,8 @@ describe('Business > TransactionBO > ', function() {
           saveStub.restore();
           transactionSaveStub.restore();
           getByAddressStub.restore();
-          updateBalance.restore();
+          updateBalanceStub.restore();
+          getContractAddressesStub.restore();
         });
     });
 
@@ -600,7 +588,7 @@ describe('Business > TransactionBO > ', function() {
           nonce: 3,
           to: 'contractAddress',
           transactionIndex: 16,
-          value: '0',
+          value: 0,
           createdAt: now,
           isConfirmed: true
         })
@@ -614,7 +602,7 @@ describe('Business > TransactionBO > ', function() {
           hash: 'hash',
           input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
           nonce: 3,
-          to: 'to',
+          to: 'contractAddress',
           transactionIndex: 16,
           value: 0,
           isConfirmed: true,
@@ -637,7 +625,10 @@ describe('Business > TransactionBO > ', function() {
 
       var updateBalance = sinon.stub(addressBO, 'updateBalance');
       updateBalance
-        .withArgs({address: '0xa933582bd31552b04790131dd885c2c7bee0f0e5', privateKey: 'privateKeyToMin'});
+        .withArgs({
+          address: '0xa933582bd31552b04790131dd885c2c7bee0f0e5',
+          privateKey: 'privateKeyToMin'
+        }, 'contractAddress');
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
       transactionSaveStub
@@ -712,7 +703,7 @@ describe('Business > TransactionBO > ', function() {
             to: 'contractAddress',
             input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
             transactionIndex: 16,
-            value: '0',
+            value: 0,
             createdAt: now,
             isConfirmed: true
           });

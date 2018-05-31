@@ -14,14 +14,16 @@ describe('integration > base operations', function(){
   var starter = new Starter();
 
   var firstAddress = {
-    address: '0xbD524F668C929efefBfCff269D70effF87E05332',
-    privateKey: '0xaa32f19d2d330e4f6a87ea7b34feca3735fc313db075cdc12bf61743f68076ff'
+    address: '0x6025961e3F43AeB967f28A0aD88E46860b85def4',
+    privateKey: '5f5229964393af1dfe8d595054976ded32a1f9d936c34c2be97dd815b582d286'
   };
 
   var secondAddress = {
-    address: '0xbD524F668C929efefBfCff269D70effF87E05332',
-    privateKey: '0xaa32f19d2d330e4f6a87ea7b34feca3735fc313db075cdc12bf61743f68076ff'
+    address: '0xDCbE45343ef103162c1Aa4AACEf80B4D57D0FC40',
+    privateKey: 'fb36840407d43d5f13507b0a200c12b5423c0593352a1931dad73ae945b9cb02'
   };
+
+  var contractAddress = '0xc62ca8e3d621f6235f8a5b985b3d6f3169f75f29';
 
   var clearDatabase = function() {
     var chain = Promise.resolve();
@@ -35,14 +37,6 @@ describe('integration > base operations', function(){
       })
       .then(function() {
         return transactionBO.clear();
-      })
-      .then(function() {
-        var p = [];
-
-        p.push(addressBO.registerAddressFromDaemon('ownerId', firstAddress));
-        p.push(addressBO.registerAddressFromDaemon('ownerId', secondAddress));
-
-        return Promise.all(p);
       });
   };
 
@@ -58,12 +52,21 @@ describe('integration > base operations', function(){
       })
       .then(function() {
         return starter.configureDefaultSettings();
+      })
+      .then(function() {
+        var p = [];
+
+        p.push(addressBO.registerAddressFromDaemon('ownerId', firstAddress));
+        p.push(addressBO.registerAddressFromDaemon('ownerId', secondAddress));
+
+        return Promise.all(p);
       });
   });
 
   after(function(){
     return clearDatabase();
   });
+
 
   it('01 - should sinchronize existing addresses from daemon and maintain the pool', function() {
     this.timeout(50000);
@@ -83,7 +86,7 @@ describe('integration > base operations', function(){
       });
   });
 
-  it('01 - should sinchronize blockchain', function() {
+  it('01 - should create a new address for a ownerId', function() {
     this.timeout(50000);
 
     var chain = Promise.resolve();
@@ -101,7 +104,7 @@ describe('integration > base operations', function(){
       });
   });
 
-  it('02 - should create a new address for a ownerId', function() {
+  it('02 - should sinchronize blockchain', function() {
     this.timeout(500000);
     var chain = Promise.resolve();
 
@@ -112,6 +115,110 @@ describe('integration > base operations', function(){
       .then(function(r) {
         expect(r).to.be.true;
       });
+    });
+
+    it('03 - should create a transaction', function() {
+      this.timeout(500000);
+      var chain = Promise.resolve();
+
+      return chain
+        .then(function() {
+          return transactionBO.save({
+            from: firstAddress.address,
+            to: secondAddress.address,
+            amount: 10000
+          });
+        })
+        .then(function(r) {
+          expect(r.transactionHash).to.not.be.undefined;
+          expect(r.from).to.be.equal(firstAddress.address);
+          expect(r.to).to.be.equal(secondAddress.address);
+          expect(r.amount).to.be.equal(10000);
+        });
+    });
+
+    it('04 - should create a new addres for token and mint new tokens', function() {
+      this.timeout(500000);
+      var chain = Promise.resolve();
+      var newAddress = null;
+
+      return chain
+        .then(function() {
+          return addressBO.createAddressFromDaemon('ownerId', contractAddress);
+        })
+        .then(function(r) {
+          newAddress = r;
+          expect(r.token.contractAddress).to.be.equal(contractAddress);
+
+          return transactionBO.save({
+            from: firstAddress.address,
+            to: newAddress.address,
+            amount: 0,
+            token: {
+              contractAddress: contractAddress,
+              method: {
+                name: 'mint',
+                params: {
+                  to: newAddress.address,
+                  amount: 10000
+                }
+              }
+            }
+          })
+          .then(function(r) {
+            expect(r.transactionHash).to.not.be.undefined;
+            expect(r.from).to.be.equal(firstAddress.address);
+            expect(r.to).to.be.equal(newAddress.address);
+            expect(r.amount).to.be.equal(0);
+
+            return addressBO.getByAddress(null, newAddress.address);
+          })
+          .then(function(r) {
+            expect(r.token.balance.available).to.be.equal(10000);
+          });
+        });
+    });
+
+    it('04 - should create a new addres for token and transfer tokens', function() {
+      this.timeout(500000);
+      var chain = Promise.resolve();
+      var newAddress = null;
+
+      return chain
+        .then(function() {
+          return addressBO.createAddressFromDaemon('ownerId', contractAddress);
+        })
+        .then(function(r) {
+          newAddress = r;
+          expect(r.token.contractAddress).to.be.equal(contractAddress);
+
+          return transactionBO.save({
+            from: firstAddress.address,
+            to: newAddress.address,
+            amount: 0,
+            token: {
+              contractAddress: contractAddress,
+              method: {
+                name: 'transfer',
+                params: {
+                  to: newAddress.address,
+                  amount: 1
+                }
+              }
+            }
+          })
+          .then(function(r) {
+            expect(r.transactionHash).to.not.be.undefined;
+            expect(r.from).to.be.equal(firstAddress.address);
+            expect(r.to).to.be.equal(newAddress.address);
+            expect(r.amount).to.be.equal(0);
+
+            return addressBO.getByAddress(null, newAddress.address);
+          })
+          .then(function(r) {
+            expect(r.token.balance.available).to.be.equal(1);
+          });
+        });
     });
 
     /*

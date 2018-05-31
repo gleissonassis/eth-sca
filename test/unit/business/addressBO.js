@@ -1,8 +1,6 @@
 var AddressBO         = require('../../../src/business/addressBO');
-var ModelParser       = require('../../../src/models/modelParser');
-var DaemonHelper      = require('../../../src/helpers/daemonHelper');
-var DateHelper        = require('../../../src/helpers/dateHelper');
 var HelperFactory     = require('../../../src/helpers/helperFactory');
+var ModelParser       = require('../../../src/models/modelParser');
 var DAOFactory        = require('../../../src/daos/daoFactory');
 var chai              = require('chai');
 var sinon             = require('sinon');
@@ -10,9 +8,9 @@ var expect            = chai.expect;
 
 describe('Business > AddressBO > ', function() {
   var addressDAO = DAOFactory.getDAO('address');
-  var dateHelper = new DateHelper();
+  var dateHelper = HelperFactory.getHelper('date');
   var modelParser = new ModelParser();
-  var daemonHelper = new DaemonHelper({});
+  var daemonHelper = HelperFactory.getHelper('daemon');
   var mutexHelper = HelperFactory.getHelper('mutex');
 
   var addressBO = new AddressBO({

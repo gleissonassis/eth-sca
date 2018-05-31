@@ -31,7 +31,7 @@ module.exports = function(){
       type: Date,
       required: false,
     },
-    erc20: {
+    token: {
       contractAddress: {
         type: String,
         required: false
