@@ -22,7 +22,7 @@ module.exports = function() {
       }
 
       if (req.params.address) {
-        filter.from = req.params.from;
+        filter.from = {$regex : new RegExp(req.params.from, 'i')};
       }
 
       if (req.params.transactionHash) {
@@ -62,7 +62,7 @@ module.exports = function() {
       req.body.ownerId = req.params.ownerId;
 
       if (req.params.address) {
-        req.body.from = [req.params.address];
+        req.body.from = req.params.address;
       }
       business.save(req.body)
         .then(function(r) {
@@ -77,7 +77,7 @@ module.exports = function() {
       var filter = {};
 
       if (req.params.address) {
-        filter.address = req.params.address;
+        filter.address = {$regex : new RegExp(req.params.address, 'i')};
       }
 
       if (req.params.transactionHash) {

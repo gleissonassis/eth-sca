@@ -177,7 +177,7 @@ module.exports = function(dependencies) {
 
       return new Promise(function(resolve, reject) {
         var filter = {
-          address: address
+          address: {$regex : new RegExp(address, 'i')}
         };
 
         if (ownerId) {

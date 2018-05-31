@@ -41,13 +41,13 @@ module.exports = function() {
 
     createAddress: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
-      business.createAddress(req.params.ownerId)
+      business.createAddress(req.params.ownerId, req.body.contractAddress)
         .then(function(r) {
           rh.created(r);
 
           //this process will occurs in a diferent thread, just to maintain the
           //the pool with a good amount of availabe addresses
-          //aapmsWorker.run();
+          aapmsWorker.run();
         })
         .catch(rh.error);
     },

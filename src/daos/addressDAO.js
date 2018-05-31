@@ -63,7 +63,7 @@ module.exports = function() {
 
     getContractAddresses: function() {
       return new Promise(function(resolve, reject) {
-        logger.info('[AddressDAO] Getting contract addresses', filter);
+        logger.info('[AddressDAO] Getting contract addresses');
 
         model.distinct('token.contractAddress')
           .then(function(items) {

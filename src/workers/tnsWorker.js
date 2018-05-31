@@ -3,7 +3,6 @@ var logger          = require('../config/logger');
 
 module.exports = function(dependencies) {
   var transactionBO = dependencies.transactionBO;
-  var addressBO = dependencies.addressBO;
   var requestHelper = dependencies.requestHelper;
   var configurationBO = dependencies.configurationBO;
 
@@ -33,7 +32,6 @@ module.exports = function(dependencies) {
 
     notifyConfirmedTransactions: function() {
       var chain = Promise.resolve();
-      var addresses = [];
       var transactions = null;
       var transactionNotificationAPI = null;
 
@@ -51,14 +49,14 @@ module.exports = function(dependencies) {
             return transactionBO.getTransactionsToNotify();
           })
           .then(function(r) {
-            logger.info('[TNSWorker] Returned unnotified transactions from database', JSON.stringify(r));
+            logger.info('[TNSWorker] Returned unnotified transactions from database', r.transactionHash);
             transactions = r;
             var p = [];
 
             logger.info('[TNSWorker] Sending the notifications about transactions');
 
             for (var i = 0; i < transactions.length; i++) {
-              logger.info('[TNSWorker] Notifiyng about the transaction', transactions[i]);
+              logger.info('[TNSWorker] Notifiyng about the transaction', transactions[i].transactionHash);
               var notificationPromise = new Promise(function(resolve) {
                 requestHelper.postJSON(
                   transactionNotificationAPI,
@@ -85,14 +83,14 @@ module.exports = function(dependencies) {
             for (var i = 0; i < transactions.length; i++) {
               if (!r[i].isError) {
                 if (!transactions[i].notifications.creation.isNotified) {
-                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
+                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].transactionHash);
                   p.push(transactionBO.updateIsCreationNotifiedFlag(transactions[i].id));
                 } else {
-                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
-                  p.push(transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].id));
+                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].transactionHash);
+                  p.push(transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].transactionHash));
                 }
               } else {
-                logger.info('[TNSWorker] The notification has failed to ', transactionNotificationAPI, transactions[i].id, r[i].error);
+                logger.info('[TNSWorker] The notification has failed to ', transactionNotificationAPI, transactions[i].transactionHash, r[i].error);
               }
             }
 
@@ -104,7 +102,7 @@ module.exports = function(dependencies) {
             resolve(true);
           })
           .catch(function(r) {
-            logger.error('[TNSWorker] An error has occurred while notifying unnotified transactions', JSON.stringify(r));
+            logger.error('[TNSWorker] An error has occurred while notifying unnotified transactions', r.transactionHash);
             resolve(true);
           });
       });

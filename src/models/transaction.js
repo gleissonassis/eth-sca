@@ -57,7 +57,7 @@ module.exports = function(){
     },
     to: {
       type: String,
-      required: true
+      required: false
     },
     from: {
       type: String,

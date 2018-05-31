@@ -24,6 +24,7 @@ module.exports = {
 
     daemonSettings: {
       previousBlocksToCheck: 100,
-      baseUrl: process.env.DAEMON_BASE_URL || 'https://ropsten.infura.io',
+      //baseUrl: process.env.DAEMON_BASE_URL || 'https://ropsten.infura.io',
+      baseUrl: process.env.DAEMON_BASE_URL || 'http://localhost:7545',
     }
   };

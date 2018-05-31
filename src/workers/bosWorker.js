@@ -39,8 +39,10 @@ module.exports = function(dependencies) {
 
       for (var i = 0; i < transactions.length; i++) {
         var transaction = transactions[i];
-        if (this.addresses[transaction.to] || this.addresses[transaction.from]) {
-          logger.info('[BOSWorker] Parsing the transaction', transactions[i].hash, JSON.stringify(transactions[i]));
+        var lowerCaseTo = transaction.to ? new String(transaction.to).toLowerCase():'';
+        var lowerCaseFrom = transaction.from ? new String(transaction.from).toLowerCase():'';
+        if (this.addresses[lowerCaseTo] || this.addresses[lowerCaseFrom]) {
+          logger.info('[BOSWorker] Parsing the transaction', transactions[i].hash);
 
           var pTransaction = new Promise(function(resolve) {
             transactionBO.parseTransaction(transactions[i], currentBlockNumber)
@@ -50,7 +52,7 @@ module.exports = function(dependencies) {
 
           p.push(pTransaction);
         } else {
-          logger.info('[BOSWorker] Ignoring the transaction', transactions[i].hash, JSON.stringify(transactions[i]));
+          logger.info('[BOSWorker] Ignoring the transaction', transactions[i].hash);
         }
       }
 
@@ -73,14 +75,25 @@ module.exports = function(dependencies) {
             return configurationBO.getByKey('currentBlockNumber');
           })
           .then(function(r) {
+            var p = [];
             currentBlockNumber = parseInt(r.value);
+
             logger.info('[BOSWorker] Getting the address from database');
-            return addressBO.getAll();
+            p.push(addressBO.getAll());
+            p.push(addressBO.getContractAddresses());
+
+            return Promise.all(p);
           })
           .then(function(r) {
-            r.forEach(function(address) {
-              self.addresses[address.address] = true;
+            r[0].forEach(function(address) {
+              self.addresses[address.address.toLowerCase()] = true;
             });
+
+            r[1].forEach(function(address) {
+              self.addresses[address.toLowerCase()] = true;
+            });
+
+            logger.info('[BOSWorker] Allowed address to be processed', JSON.stringify(self.addresses));
 
             logger.info('[BOSWorker] Getting the block number from daemon');
             return daemonHelper.getBlockNumber();
