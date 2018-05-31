@@ -70,6 +70,12 @@ describe('Business > AddressBO > ', function() {
 
     it('registerAddressFromDaemon', function() {
       var now = new Date();
+
+      var getBalanceStub = sinon.stub(daemonHelper, 'getBalance');
+      getBalanceStub
+        .withArgs('address')
+        .returns(Promise.resolve(0));
+
       var getNowStub = sinon.stub(dateHelper, 'getNow');
       getNowStub
         .withArgs()

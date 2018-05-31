@@ -56,7 +56,7 @@ module.exports = function(dependencies) {
       }, {}, '+createdAt');
     },
 
-    createAddressFromDaemon: function(ownerId) {
+    createAddressFromDaemon: function(ownerId, erc20ContractAddress) {
       var self = this;
       var chain = Promise.resolve();
 
@@ -68,14 +68,14 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             logger.info('[AddressBO] Saving the address and linking to ownerId', ownerId);
-            return self.registerAddressFromDaemon(ownerId, r);
+            return self.registerAddressFromDaemon(ownerId, r, erc20ContractAddress);
           })
           .then(resolve)
           .catch(reject);
       });
     },
 
-    registerAddressFromDaemon: function(ownerId, address) {
+    registerAddressFromDaemon: function(ownerId, address, erc20ContractAddress) {
       var chain = Promise.resolve();
 
       return new Promise(function(resolve, reject) {
@@ -96,6 +96,16 @@ module.exports = function(dependencies) {
               }
             };
 
+            if (erc20ContractAddress) {
+              addressEntity.erc20 = {
+                contractAddress: erc20ContractAddress,
+                balance: {
+                  available: 0,
+                  locked: 0
+                }
+              };
+            }
+
             logger.info('[AddressBO] Saving the address to the database', JSON.stringify(addressEntity));
             return addressDAO.save(addressEntity);
           })
@@ -108,7 +118,7 @@ module.exports = function(dependencies) {
       });
     },
 
-    createAddress: function(ownerId) {
+    createAddress: function(ownerId, erc20ContractAddress) {
       var self = this;
       var chain = Promise.resolve();
       var freeAddress = null;
@@ -135,6 +145,16 @@ module.exports = function(dependencies) {
             freeAddress.ownerId = ownerId;
             freeAddress.updatedAt = dateHelper.getNow();
 
+            if (erc20ContractAddress) {
+              freeAddress.erc20 = {
+                contractAddress: erc20ContractAddress,
+                balance: {
+                  available: 0,
+                  locked: 0
+                }
+              };
+            }
+
             logger.info('[AddressBO] Updating the free address to be owned by the ownerId ',
               JSON.stringify(freeAddress));
             return addressDAO.update(freeAddress);
@@ -148,7 +168,7 @@ module.exports = function(dependencies) {
       });
     },
 
-    getByAddress: function(ownerId, address) {
+    getByAddress: function(ownerId, address, erc20ContractAddress) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
@@ -158,6 +178,10 @@ module.exports = function(dependencies) {
 
         if (ownerId) {
           filter.ownerId = ownerId;
+        }
+
+        if (erc20ContractAddress) {
+          filter['erc20.contractAddress'] = erc20ContractAddress;
         }
 
         logger.info('[AddressBO] Getting an address by ownerId/address', ownerId, address);
@@ -201,7 +225,46 @@ module.exports = function(dependencies) {
       });
     },
 
-    checkHasFunds: function(address, amount) {
+    checkHasFunds: function(address, amount, erc20ContractAddress) {
+      if (erc20ContractAddress) {
+        return this.checkHasERC20Funds(address, erc20ContractAddress, amount);
+      } else {
+        return this.checkHasETHFunds(address, amount);
+      }
+    },
+
+    checkHasERC20Funds: function(address, erc20ContractAddress, amount) {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        var chain = mutexHelper.lock(address);
+        var unlock = null;
+
+        return chain
+          .then(function(r) {
+            unlock = r;
+            return self.getByAddress(null, address, erc20ContractAddress);
+          })
+          .then(function(r) {
+            logger.info('[AddressBO.checkHasERC20Funds()] Checking if the wallet has funds', JSON.stringify(r));
+            if (r.erc20.available >= amount) {
+              logger.info('[AddressBO.checkHasERC20Funds()] The wallet has funds', JSON.stringify(r));
+              return true;
+            } else {
+              logger.info('[AddressBO.checkHasERC20Funds()] The wallet do not have funds', JSON.stringify(r));
+              return false;
+            }
+          })
+          .then(function(r) {
+            unlock();
+            return r;
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    checkHasETHFunds: function(address, amount) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
@@ -214,12 +277,12 @@ module.exports = function(dependencies) {
             return self.getByAddress(null, address);
           })
           .then(function(r) {
-            logger.info('[AddressBO.checkHasFunds()] Checking if the wallet has funds', JSON.stringify(r));
+            logger.info('[AddressBO.checkHasETHFunds()] Checking if the wallet has funds', JSON.stringify(r));
             if (r.balance.available >= amount) {
-              logger.info('[AddressBO.checkHasFunds()] The wallet has funds', JSON.stringify(r));
+              logger.info('[AddressBO.checkHasETHFunds()] The wallet has funds', JSON.stringify(r));
               return true;
             } else {
-              logger.info('[AddressBO.checkHasFunds()] The wallet do not have funds', JSON.stringify(r));
+              logger.info('[AddressBO.checkHasETHFunds()] The wallet do not have funds', JSON.stringify(r));
               return false;
             }
           })

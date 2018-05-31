@@ -31,6 +31,22 @@ module.exports = function(){
       type: Date,
       required: false,
     },
+    erc20: {
+      contractAddress: {
+        type: String,
+        required: false
+      },
+      balance: {
+        available: {
+          type: Number,
+          required: false,
+        },
+        locked: {
+          type: Number,
+          required: false
+        }
+      }
+    },
     updatedAt: {
       type: Date,
       required: false,
