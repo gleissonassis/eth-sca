@@ -298,7 +298,7 @@ describe('Business > AddressBO > ', function() {
     it('disable', function() {
       var getAllStub = sinon.stub(addressDAO, 'getAll');
       getAllStub
-        .withArgs({address: 'address', isEnabled: true})
+        .withArgs({address: {$regex : new RegExp('address', 'i')}, isEnabled: true})
         .returns(Promise.resolve([{
           address: 'address',
           id: 'ID'
@@ -328,7 +328,7 @@ describe('Business > AddressBO > ', function() {
 
       var getAllStub = sinon.stub(addressDAO, 'getAll');
       getAllStub
-        .withArgs({address: 'address', isEnabled: true})
+        .withArgs({address: {$regex : new RegExp('address', 'i')}, isEnabled: true})
         .returns(Promise.resolve([]));
 
 

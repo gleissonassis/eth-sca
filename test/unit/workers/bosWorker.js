@@ -34,6 +34,11 @@ describe('Workers > BOSWorker', function() {
       .withArgs({key:'currentBlockNumber', value: 24})
       .returns(Promise.resolve());
 
+    var getContractAddressesStub = sinon.stub(addressBO, 'getContractAddresses');
+    getContractAddressesStub
+      .withArgs()
+      .returns(Promise.resolve([]));
+
     var getAllStub = sinon.stub(addressBO, 'getAll');
     getAllStub
       .withArgs()
@@ -120,11 +125,13 @@ describe('Workers > BOSWorker', function() {
         expect(getAllStub.callCount).to.be.equal(1);
         expect(getBlockNumberStub.callCount).to.be.equal(1);
         expect(parseTransactionStub.callCount).to.be.equal(3);
+        expect(getContractAddressesStub.callCount).to.be.equal(1);
 
         getAllStub.restore();
         getBlockNumberStub.restore();
         parseTransactionStub.restore();
         getByKeyStub.restore();
+        getContractAddressesStub.restore();
       });
   });
 
@@ -136,6 +143,11 @@ describe('Workers > BOSWorker', function() {
         key: 'currentBlockNumber',
         value: 12
       }));
+
+    var getContractAddressesStub = sinon.stub(addressBO, 'getContractAddresses');
+    getContractAddressesStub
+      .withArgs()
+      .returns(Promise.resolve([]));
 
     var getAllStub = sinon.stub(addressBO, 'getAll');
     getAllStub
@@ -156,9 +168,11 @@ describe('Workers > BOSWorker', function() {
         expect(r).to.be.true;
         expect(getBlockNumberStub.callCount).to.be.equal(1);
         expect(getAllStub.callCount).to.be.equal(1);
+        expect(getContractAddressesStub.callCount).to.be.equal(1);
 
         getBlockNumberStub.restore();
         getAllStub.restore();
+        getContractAddressesStub.restore();
       });
   });
 });
