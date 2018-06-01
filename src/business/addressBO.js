@@ -299,6 +299,25 @@ module.exports = function(dependencies) {
       });
     },
 
+    getAddressBalance: function(address) {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        self.getByAddress(null, address)
+          .then(function(r) {
+            var result = r.balance;
+
+            if (r.token && r.token.balance) {
+              result.token = r.token.balance;
+            }
+
+            return result;
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     updateBalance: function(address) {
       var chain = Promise.resolve();
       var ethBalance = null;
@@ -312,7 +331,17 @@ module.exports = function(dependencies) {
           ethBalance = r;
 
           if (address.token && address.token.contractAddress) {
-            return daemonHelper.getTokenBalance(address.address, address.token.contractAddress);
+            return new Promise(function(resolve) {
+              var chain = Promise.resolve();
+              chain
+                .then(function() {
+                  return daemonHelper.getTokenBalance(address.address, address.token.contractAddress);
+                })
+                .then(resolve)
+                .catch(function() {
+                  resolve(null);
+                });
+            });
           } else {
             return null;
           }

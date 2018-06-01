@@ -40,8 +40,21 @@ module.exports = function(dependencies) {
     },
 
     getTokenBalance: function(address, contractAddress) {
-      var token = new web3.eth.Contract(erc20Interface.abi, contractAddress);
-      return token.methods.balanceOf(address).call();
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            try {
+              var token = new web3.eth.Contract(erc20Interface.abi, contractAddress);
+              return token.methods.balanceOf(address).call();
+            } catch (e) {
+              throw e;
+            }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     estimateGas: function(transaction) {
