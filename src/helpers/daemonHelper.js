@@ -318,24 +318,27 @@ module.exports = function(dependencies) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
-        var decoded = abiDecoder.decodeMethod(input);
-
         try {
-          switch (decoded.name) {
-            case 'mint':
-              resolve(self.parseTokenMintMethod(decoded));
-              break;
-            case 'transfer':
-              resolve(self.parseTokenTransferMethod(decoded));
-              break;
-            case 'transferPreSigned':
-              resolve(self.parseTokenTransferPreSignedMethod(decoded));
-              break;
-            default:
-              reject('method not found ' + decoded.name);
+          var decoded = abiDecoder.decodeMethod(input);
+          if (decoded) {
+            switch (decoded.name) {
+              case 'mint':
+                resolve(self.parseTokenMintMethod(decoded));
+                break;
+              case 'transfer':
+                resolve(self.parseTokenTransferMethod(decoded));
+                break;
+              case 'transferPreSigned':
+                resolve(self.parseTokenTransferPreSignedMethod(decoded));
+                break;
+              default:
+                resolve(null);
+            }
+          } else {
+            resolve(null);
           }
         } catch (e) {
-          reject(e);
+          reject(null);
         }
       });
     }

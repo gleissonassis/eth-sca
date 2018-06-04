@@ -67,6 +67,10 @@ module.exports = function(){
       type: String,
       required: false
     },
+    parsedInput: {
+      type: Object,
+      required: false
+    },
     createdAt: {
       type: Date,
       required: false,

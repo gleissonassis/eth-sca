@@ -1,4 +1,5 @@
 var logger          = require('../config/logger');
+var Decimal         = require('decimal.js');
 
 module.exports = function(dependencies) {
   var addressDAO = dependencies.addressDAO;
@@ -349,10 +350,10 @@ module.exports = function(dependencies) {
         .then(function(r) {
           tokenBalance = r;
           var o = modelParser.prepare(address);
-          o.balance.available = ethBalance;
+          o.balance.available = new Decimal(ethBalance).toFixed(0);
 
           if (tokenBalance) {
-            o.token.balance.available = tokenBalance;
+            o.token.balance.available = new Decimal(tokenBalance).toFixed(0);
           }
 
           return addressDAO.update(o);

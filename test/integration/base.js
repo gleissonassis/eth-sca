@@ -149,7 +149,6 @@ describe('integration > base operations', function(){
         .then(function(r) {
           newAddress = r;
           expect(r.token.contractAddress).to.be.equal(contractAddress);
-
           return transactionBO.save({
             from: firstAddress.address,
             to: newAddress.address,

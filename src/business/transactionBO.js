@@ -429,6 +429,7 @@ module.exports = function(dependencies) {
         var chain = Promise.resolve();
         var transactionRequest = null;
         var addressInfo = null;
+        var parsedInput = null;
         var rBlockchainTransaction = null;
         var minimumConfirmations = 0;
 
@@ -436,8 +437,23 @@ module.exports = function(dependencies) {
           .then(function() {
             return configurationBO.getByKey('minimumConfirmations');
           })
-          .then(function(r) {
+          .then(function(r){
             minimumConfirmations = parseInt(r.value);
+            return daemonHelper.parseTokenInputData(blockchainTransaction.input);
+          })
+          .then(function(r) {
+            parsedInput = r;
+
+            if (parsedInput) {
+              logger.info('[TransactionBO] Getting address from parsedInput', parsedInput.params.to);
+              return addressBO.getByAddress(null, parsedInput.params.to);
+            } else {
+              logger.info('[TransactionBO] Getting address from blockchain transaction to', blockchainTransaction.to);
+              return addressBO.getByAddress(null, blockchainTransaction.to);
+            }
+          })
+          .then(function(r) {
+            addressInfo = r;
             logger.info('[TransactionBO] Trying to find the transaction request linked to this hash',
               blockchainTransaction.hash);
             return self.getTransactionRequestByTransactionHash(blockchainTransaction.hash);
@@ -445,7 +461,7 @@ module.exports = function(dependencies) {
           .then(function(r) {
             transactionRequest = r;
 
-            if (!r) {
+            if (!transactionRequest) {
               logger.info('[TransactionBO] There is no transaction request linked to this transactionHash',
                 blockchainTransaction.hash);
             } else {
@@ -496,6 +512,7 @@ module.exports = function(dependencies) {
               to: blockchainTransaction.to,
               from: blockchainTransaction.from,
               input: blockchainTransaction.input,
+              parsedInput: parsedInput,
               createdAt: dateHelper.getNow()
             };
             logger.info('[TransactionBO] Saving the transaction', JSON.stringify(newTransaction));

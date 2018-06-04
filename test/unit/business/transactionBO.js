@@ -278,6 +278,13 @@ describe('Business > TransactionBO > ', function() {
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
+      getByAddressStub
+        .withArgs(null, 'to')
+        .returns(Promise.resolve({
+          ownerId: 'ownerId',
+          address:'to'
+        }));
+
       var updateBalanceStub = sinon.stub(addressBO, 'updateBalance');
 
       var transactionSaveStub = sinon.stub(transactionDAO, 'save');
@@ -363,7 +370,7 @@ describe('Business > TransactionBO > ', function() {
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
           expect(updateBalanceStub.callCount).to.be.equal(0);
-          expect(getByAddressStub.callCount).to.be.equal(0);
+          expect(getByAddressStub.callCount).to.be.equal(1);
 
           getNowStub.restore();
           getAll.restore();
@@ -438,6 +445,12 @@ describe('Business > TransactionBO > ', function() {
         }));
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
+      getByAddressStub
+        .withArgs(null, 'to')
+        .returns(Promise.resolve({
+          ownerId: 'ownerId',
+          address:'to'
+        }));
       var updateBalanceStub = sinon.stub(addressBO, 'updateBalance');
 
 
@@ -523,7 +536,7 @@ describe('Business > TransactionBO > ', function() {
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(0);
+          expect(getByAddressStub.callCount).to.be.equal(1);
           expect(updateBalanceStub.callCount).to.be.equal(0);
 
           getNowStub.restore();
@@ -651,7 +664,13 @@ describe('Business > TransactionBO > ', function() {
           to: 'contractAddress',
           from: 'from',
           input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
-          timestamp: 1525944061,
+          parsedInput: {
+            method: 'mint',
+            params: {
+              to: '0xa933582bd31552b04790131dd885c2c7bee0f0e5',
+              amount: 1000
+            }
+          },
           createdAt: now
         })
         .returns(Promise.resolve({
@@ -674,6 +693,13 @@ describe('Business > TransactionBO > ', function() {
           to: 'contractAddress',
           from: 'from',
           input: '0x40c10f19000000000000000000000000a933582bd31552b04790131dd885c2c7bee0f0e500000000000000000000000000000000000000000000000000000000000003e8',
+          parsedInput: {
+            method: 'mint',
+            params: {
+              to: '0xa933582bd31552b04790131dd885c2c7bee0f0e5',
+              amount: 1000
+            }
+          },
           createdAt: now
         }));
 
@@ -713,7 +739,7 @@ describe('Business > TransactionBO > ', function() {
           expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
           expect(transactionSaveStub.callCount).to.be.equal(1);
-          expect(getByAddressStub.callCount).to.be.equal(2);
+          expect(getByAddressStub.callCount).to.be.equal(3);
           expect(updateBalance.callCount).to.be.equal(1);
 
           getNowStub.restore();
