@@ -95,5 +95,17 @@ module.exports = function() {
         .then(rh.ok)
         .catch(rh.error);
     },
+
+    createTransferSignature: function(req, res) {
+      var rh = new HTTPResponseHelper(req, res);
+      business.createTransferSignature(req.body.owner,
+                                       req.body.contractAddress,
+                                       req.body.fromAddress,
+                                       req.body.to,
+                                       req.body.amount,
+                                       req.body.fee)
+        .then(rh.ok)
+        .catch(rh.error);
+    }
   };
 };

@@ -5,6 +5,9 @@ module.exports = function(app) {
     .get(controller.getAll)
     .post(controller.save);
 
+  app.route('/v1/transactions/signatures')
+    .post(controller.createTransferSignature);
+
   app.route('/v1/transactions/:transactionHash')
     .get(controller.getAll);
 

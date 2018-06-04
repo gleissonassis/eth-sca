@@ -15,21 +15,23 @@ var Web3                          = require('web3');
 var abiDecoder                    = require('abi-decoder');
 var ERC20Interface                = require('../contracts/interfaces/ERC20.json');
 var ERC865Interface               = require('../contracts/interfaces/ERC865.json');
+var FullTokenInterface            = require('../contracts/interfaces/FullToken.json');
 var MintableTokenInterface        = require('../contracts/interfaces/MintableToken.json');
-
-var web3 = new Web3();
-web3.setProvider(new web3.providers.HttpProvider(settings.daemonSettings.baseUrl));
 
 module.exports = {
   getHelper: function(helper) {
     switch (helper) {
       case 'daemon':
+        var web3 = new Web3();
+        web3.setProvider(new web3.providers.HttpProvider(settings.daemonSettings.baseUrl));
+
         return new DaemonHelper({
           web3: web3,
           abiDecoder: abiDecoder,
           erc20Interface: ERC20Interface,
           mintableTokenInterface: MintableTokenInterface,
-          erc865Interface: ERC865Interface
+          erc865Interface: ERC865Interface,
+          fullTokenInterface: FullTokenInterface
         });
       case 'mutex':
         return new MutexHelper({

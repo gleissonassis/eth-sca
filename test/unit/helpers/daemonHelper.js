@@ -1,18 +1,18 @@
 var HelperFactory     = require('../../../src/helpers/helperFactory');
 var chai              = require('chai');
+var Web3              = require('web3');
 var expect            = chai.expect;
 
 describe('business > DaemonHelper', function() {
   var daemonHelper = HelperFactory.getHelper('daemon');
 
+  var web3 = new Web3();
+  web3.eth.getBlock = function() {
+    return Promise.resolve(Promise.resolve({transactions: [{}, {}, {}]}));
+  };
+
   daemonHelper.setDependencies({
-    web3: {
-      eth: {
-        getBlock: function() {
-          return Promise.resolve(Promise.resolve({transactions: [{}, {}, {}]}));
-        }
-      }
-    }
+    web3: web3
   });
 
   it('should get transactions', function() {

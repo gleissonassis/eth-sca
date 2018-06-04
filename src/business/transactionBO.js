@@ -563,6 +563,30 @@ module.exports = function(dependencies) {
 
     updateIsConfirmationNotifiedFlag: function(transactionId) {
       return transactionDAO.updateIsConfirmationNotifiedFlag(transactionId);
+    },
+
+    createTransferSignature: function(owner, contractAddress, fromAddress, to, amount, fee) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        var from = null;
+        var nonce = 0;
+
+        chain
+          .then(function() {
+            return addressBO.getByAddress(null, fromAddress);
+          })
+          .then(function(r) {
+            from = r;
+            return daemonHelper.getTransactionCount(owner);
+          })
+          .then(function(r) {
+            nonce = r;
+            return daemonHelper.createTransferSignature(contractAddress, from, to, amount, fee, nonce);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     }
   };
 };

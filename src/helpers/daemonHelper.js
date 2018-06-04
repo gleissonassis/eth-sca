@@ -6,11 +6,13 @@ module.exports = function(dependencies) {
   var abiDecoder = dependencies.abiDecoder;
   var erc20Interface = dependencies.erc20Interface;
   var erc865Interface = dependencies.erc865Interface;
+  var fullTokenInterface = dependencies.fullTokenInterface;
   var mintableTokenInterface = dependencies.mintableTokenInterface;
 
   abiDecoder.addABI(erc20Interface.abi);
   abiDecoder.addABI(erc865Interface.abi);
   abiDecoder.addABI(mintableTokenInterface.abi);
+  abiDecoder.addABI(fullTokenInterface.abi);
 
   return {
     setDependencies: function(dependencies) {
@@ -99,6 +101,10 @@ module.exports = function(dependencies) {
 
     getTransaction: function(hash) {
       return web3.eth.getTransaction(hash);
+    },
+
+    getTransactionCount: function(address) {
+      return web3.eth.getTransactionCount(address);
     },
 
     sendTransaction: function(transaction, privateKey) {
@@ -265,6 +271,45 @@ module.exports = function(dependencies) {
       });
 
       return r;
+    },
+
+    createTransferSignature: function(contractAddress, from, to, amount, fee, nonce) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        var token = new web3.eth.Contract(fullTokenInterface.abi, contractAddress);
+
+        var hash = null;
+        var signature = null;
+
+        return chain
+          .then(function() {
+            return token.methods.transferPreSignedHashing(
+              contractAddress,
+              to,
+              amount,
+              fee,
+              nonce).call();
+          })
+          .then(function(r) {
+            hash = r;
+
+            return web3.eth.accounts.sign(hash, from.privateKey);
+          })
+          .then(function(r) {
+            signature = r;
+            return {
+              contractAddress: contractAddress,
+              to: to,
+              amount: amount,
+              fee: fee,
+              nonce: nonce,
+              signature: signature.signature
+            };
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     parseTokenTransferMethod: function(decoded) {
