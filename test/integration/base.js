@@ -23,6 +23,11 @@ describe('integration > base operations', function(){
     privateKey: 'fb36840407d43d5f13507b0a200c12b5423c0593352a1931dad73ae945b9cb02'
   };
 
+  /*var thirdAddress = {
+    address: '0x899c70AaD9eAB75bCdD4d0864b39DE5E9ff063a1',
+    privateKey: 'ba99a19ae56d3230626496b5614f2d63798f874c9914cc57028f5bbd92d0f0d9'
+  };*/
+
   var contractAddress = '0xc62ca8e3d621f6235f8a5b985b3d6f3169f75f29';
 
   var clearDatabase = function() {
@@ -219,6 +224,98 @@ describe('integration > base operations', function(){
           });
         });
     });
+
+    /*it('04 - should sign a transaction and transfer', function() {
+      this.timeout(500000);
+      var chain = Promise.resolve();
+      var newAddress = null;
+
+      return chain
+        .then(function() {
+          return addressBO.createAddressFromDaemon('ownerId', contractAddress);
+        })
+        .then(function(r) {
+          newAddress = r;
+          expect(r.token.contractAddress).to.be.equal(contractAddress);
+          return transactionBO.save({
+            from: firstAddress.address,
+            to: newAddress.address,
+            amount: 0,
+            token: {
+              contractAddress: contractAddress,
+              method: {
+                name: 'mint',
+                params: {
+                  to: newAddress.address,
+                  amount: 10000
+                }
+              }
+            }
+          })
+          .then(function(r) {
+            expect(r.transactionHash).to.not.be.undefined;
+            expect(r.from).to.be.equal(firstAddress.address);
+            expect(r.to).to.be.equal(newAddress.address);
+            expect(r.amount).to.be.equal(0);
+
+            return addressBO.getByAddress(null, newAddress.address);
+          })
+          .then(function(r) {
+            expect(r.token.balance.available).to.be.equal(10000);
+
+            return transactionBO.createTransferSignature(firstAddress.address, contractAddress, newAddress, thirdAddress.address, 100, 10);
+          })
+          .then(function(r) {
+            console.log(r);
+            console.log('Waiting for confirmations...');
+            return new Promise(function(resolve, reject) {
+              setTimeout(function() {
+                console.log(JSON.stringify({
+                  from: firstAddress.address,
+                  to: r.to,
+                  amount: 0,
+                  token: {
+                    contractAddress: contractAddress,
+                    method: {
+                      name: 'transferPreSigned',
+                      params: {
+                        signature: r.signature,
+                        to: r.to,
+                        amount: r.amount,
+                        fee: r.fee,
+                        nonce: r.nonce
+                      }
+                    }
+                  }
+                }));
+                transactionBO.save({
+                  from: firstAddress.address,
+                  to: r.to,
+                  amount: 0,
+                  token: {
+                    contractAddress: contractAddress,
+                    method: {
+                      name: 'transferPreSigned',
+                      params: {
+                        signature: r.signature,
+                        to: r.to,
+                        amount: r.amount,
+                        fee: r.fee,
+                        nonce: r.nonce
+                      }
+                    }
+                  }
+                })
+                .then(resolve)
+                .catch(reject);
+              }, 10000);
+            });
+          })
+          .then(function(r) {
+            console.log(r);
+          });
+        });
+    });*/
 
     /*
     it('03 - should create a transaction and update the addresses balance', function() {

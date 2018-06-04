@@ -196,6 +196,8 @@ module.exports = function(dependencies) {
             return this.generateMintTransaction(transaction);
           case 'transfer':
             return this.generateTransferTransaction(transaction);
+          case 'transferPreSigned':
+            return this.generateTransferPreSignedTransaction(transaction);
           default:
 
         }
@@ -235,6 +237,23 @@ module.exports = function(dependencies) {
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.transfer(transaction.token.method.params.to, transaction.token.method.params.amount).encodeABI(),
+        };
+    },
+
+    generateTransferPreSignedTransaction: function(transaction, count) {
+      var token = new web3.eth.Contract(erc865Interface.abi, transaction.token.contractAddress);
+      var gasLimit = 3000000;
+      return {
+            from: transaction.from,
+            nonce: web3.utils.toHex(count),
+            gasLimit: web3.utils.toHex(gasLimit),
+            to: transaction.token.contractAddress,
+            value: '0x0',
+            data: token.methods.transferPreSigned(transaction.token.method.params.signature,
+                                                  transaction.token.method.params.to,
+                                                  transaction.token.method.params.amount,
+                                                  transaction.token.method.params.fee,
+                                                  transaction.token.method.params.nonce).encodeABI(),
         };
     },
 
@@ -285,7 +304,7 @@ module.exports = function(dependencies) {
         return chain
           .then(function() {
             return token.methods.transferPreSignedHashing(
-              contractAddress,
+              token.options.address,
               to,
               amount,
               fee,

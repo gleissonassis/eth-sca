@@ -565,7 +565,7 @@ module.exports = function(dependencies) {
       return transactionDAO.updateIsConfirmationNotifiedFlag(transactionId);
     },
 
-    createTransferSignature: function(owner, contractAddress, fromAddress, to, amount, fee) {
+    createTransferSignature: function(ownerAddress, contractAddress, fromAddress, to, amount, fee) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -578,7 +578,7 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             from = r;
-            return daemonHelper.getTransactionCount(owner);
+            return daemonHelper.getTransactionCount(ownerAddress);
           })
           .then(function(r) {
             nonce = r;
