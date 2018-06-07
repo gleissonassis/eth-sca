@@ -83,11 +83,24 @@ module.exports = function(dependencies) {
             for (var i = 0; i < transactions.length; i++) {
               if (!r[i].isError) {
                 if (!transactions[i].notifications.creation.isNotified) {
-                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].transactionHash);
-                  p.push(transactionBO.updateIsCreationNotifiedFlag(transactions[i].id));
+                  logger.info('[TNSWorker] Updating the flag notifications.creating.isNotified for the transaction', transactions[i].transactionHash);
+                  p.push(new Promise(function(resolve) {
+                    transactionBO.updateIsCreationNotifiedFlag(transactions[i].id)
+                      .then(resolve)
+                      .catch(function(e) {
+                        logger.error('[TNSWorker] An error has occorred while updating notifications.creating.isNotified flag', JSON.stringify(e));
+                      });
+                  }));
                 } else {
                   logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].transactionHash);
-                  p.push(transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].transactionHash));
+
+                  p.push(new Promise(function(resolve) {
+                    transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].id)
+                      .then(resolve)
+                      .catch(function(e) {
+                        logger.error('[TNSWorker] An error has occorred while updating notifications.confirmation.isNotified flag', JSON.stringify(e));
+                      });
+                  }));
                 }
               } else {
                 logger.info('[TNSWorker] The notification has failed to ', transactionNotificationAPI, transactions[i].transactionHash, r[i].error);

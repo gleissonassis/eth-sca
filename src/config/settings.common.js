@@ -15,7 +15,7 @@ module.exports = {
       minimumConfirmations: 6,
       minimumAddressPoolSize: 100,
       currentBlockNumber: 1000,
-      transactionNotificationAPI: process.env.NOTIFICATION_API_ADDRESS || 'http://localhost:3000/v1/transactions/notifications'
+      transactionNotificationAPI: process.env.NOTIFICATION_API_ADDRESS || 'http://localhost:3004/v1/wallets/BRLT/notifications'
     },
 
     mutex: {
