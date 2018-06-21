@@ -199,6 +199,8 @@ module.exports = function(dependencies) {
             return this.generateTransferTransaction(transaction);
           case 'transferPreSigned':
             return this.generateTransferPreSignedTransaction(transaction);
+          case 'burnPreSigned':
+            return this.generateBurnPreSignedTransaction(transaction);
           default:
 
         }
@@ -258,6 +260,22 @@ module.exports = function(dependencies) {
         };
     },
 
+    generateBurnPreSignedTransaction: function(transaction, count) {
+      var token = new web3.eth.Contract(erc865Interface.abi, transaction.token.contractAddress);
+      var gasLimit = 3000000;
+      return {
+            from: transaction.from,
+            nonce: web3.utils.toHex(count),
+            gasLimit: web3.utils.toHex(gasLimit),
+            to: transaction.token.contractAddress,
+            value: '0x0',
+            data: token.methods.burnPreSigned(transaction.token.method.params.signature,
+                                                  transaction.token.method.params.amount,
+                                                  transaction.token.method.params.fee,
+                                                  transaction.token.method.params.nonce).encodeABI(),
+        };
+    },
+
     parseTokenTransferPreSignedMethod: function(decoded) {
       var r = {
         method: 'transferPreSigned',
@@ -283,6 +301,37 @@ module.exports = function(dependencies) {
             break;
           case '_to':
             r.params.to = item.value;
+            break;
+          case '_value':
+            r.params.amount = new Decimal(item.value).toNumber();
+            break;
+        }
+      });
+
+      return r;
+    },
+
+    parseTokenBurnPreSignedMethod: function(decoded) {
+      var r = {
+        method: 'burnPreSigned',
+        params: {
+          signature: '',
+          amount: 0,
+          fee: 0,
+          nonce: 0
+        }
+      };
+
+      decoded.params.forEach(function(item) {
+        switch (item.name) {
+          case '_signature':
+            r.params.signature = item.value;
+            break;
+          case '_fee':
+            r.params.fee = new Decimal(item.value).toNumber();
+            break;
+          case '_nonce':
+            r.params.nonce = new Decimal(item.value).toNumber();
             break;
           case '_value':
             r.params.amount = new Decimal(item.value).toNumber();
@@ -333,6 +382,54 @@ module.exports = function(dependencies) {
             return {
               contractAddress: contractAddress,
               to: to,
+              amount: amount,
+              fee: fee,
+              nonce: nonce,
+              signature: signature
+            };
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    burnTransferSignature: function(contractAddress, from, amount, fee, nonce) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        logger.debug('[DeamonHelper.burnTransferSignature()] Instantiating the contract by address ', contractAddress);
+        var token = new web3.eth.Contract(fullTokenInterface.abi, contractAddress);
+
+        var hash = null;
+        var signature = null;
+
+        return chain
+          .then(function() {
+            logger.debug('[DeamonHelper.burnTransferSignature()] Signing the transfer ',
+                          contractAddress,
+                          amount,
+                          fee,
+                          nonce);
+
+            return token.methods.burnPreSignedHashing(
+              contractAddress,
+              amount,
+              fee,
+              nonce).call();
+          })
+          .then(function(r) {
+            hash = r;
+            logger.debug('[DeamonHelper.burnTransferSignature()] Hash', hash);
+            logger.debug('[DeamonHelper.burnTransferSignature()] privateKey', from.privateKey);
+
+            return web3.eth.accounts.sign(hash, from.privateKey);
+          })
+          .then(function(r) {
+            signature = r.signature;
+            logger.debug('[DeamonHelper.burnTransferSignature()] Signature', signature);
+
+            return {
+              contractAddress: contractAddress,
               amount: amount,
               fee: fee,
               nonce: nonce,
@@ -407,6 +504,9 @@ module.exports = function(dependencies) {
                 break;
               case 'transferPreSigned':
                 resolve(self.parseTokenTransferPreSignedMethod(decoded));
+                break;
+              case 'burnPreSigned':
+                resolve(self.parseTokenBurnPreSignedMethod(decoded));
                 break;
               default:
                 resolve(null);

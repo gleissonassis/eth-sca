@@ -96,14 +96,9 @@ module.exports = function() {
         .catch(rh.error);
     },
 
-    createTransferSignature: function(req, res) {
+    createSignature: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
-      business.createTransferSignature(req.body.owner,
-                                       req.body.contractAddress,
-                                       req.body.from,
-                                       req.body.to,
-                                       req.body.amount,
-                                       req.body.fee)
+      business.createSignature(req.body)
         .then(rh.ok)
         .catch(rh.error);
     }

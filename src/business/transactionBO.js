@@ -565,6 +565,50 @@ module.exports = function(dependencies) {
       return transactionDAO.updateIsConfirmationNotifiedFlag(transactionId);
     },
 
+    createSignature: function(data) {
+      data.type = data.type || 'transfer';
+
+      switch (data.type) {
+        case 'transfer':
+          return this.createTransferSignature(data.owner,
+                                     data.contractAddress,
+                                     data.from,
+                                     data.to,
+                                     data.amount,
+                                     data.fee);
+         case 'burn':
+           return this.createBurnSignature(data.owner,
+                                      data.contractAddress,
+                                      data.from,
+                                      data.amount,
+                                      data.fee);
+      }
+    },
+
+    createBurnSignature: function(ownerAddress, contractAddress, fromAddress, amount, fee) {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        var from = null;
+        var nonce = 0;
+
+        chain
+          .then(function() {
+            return addressBO.getByAddress(null, fromAddress);
+          })
+          .then(function(r) {
+            from = r;
+            return daemonHelper.getTransactionCount(ownerAddress);
+          })
+          .then(function(r) {
+            nonce = r;
+            return daemonHelper.burnTransferSignature(contractAddress, from, amount, fee, nonce);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     createTransferSignature: function(ownerAddress, contractAddress, fromAddress, to, amount, fee) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
