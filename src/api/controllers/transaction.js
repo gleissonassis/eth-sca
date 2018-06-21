@@ -100,7 +100,7 @@ module.exports = function() {
       var rh = new HTTPResponseHelper(req, res);
       business.createTransferSignature(req.body.owner,
                                        req.body.contractAddress,
-                                       req.body.fromAddress,
+                                       req.body.from,
                                        req.body.to,
                                        req.body.amount,
                                        req.body.fee)

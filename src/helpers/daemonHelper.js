@@ -1,5 +1,6 @@
 var Decimal         = require('decimal.js');
 var Tx              = require('ethereumjs-tx');
+var logger          = require('../config/logger');
 
 module.exports = function(dependencies) {
   var web3 = dependencies.web3;
@@ -296,6 +297,7 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
+        logger.debug('[DeamonHelper.createTransferSignature()] Instantiating the contract by address ', contractAddress);
         var token = new web3.eth.Contract(fullTokenInterface.abi, contractAddress);
 
         var hash = null;
@@ -303,8 +305,15 @@ module.exports = function(dependencies) {
 
         return chain
           .then(function() {
+            logger.debug('[DeamonHelper.createTransferSignature()] Signing the transfer ',
+                          contractAddress,
+                          to,
+                          amount,
+                          fee,
+                          nonce);
+
             return token.methods.transferPreSignedHashing(
-              token.options.address,
+              contractAddress,
               to,
               amount,
               fee,
@@ -312,18 +321,22 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             hash = r;
+            logger.debug('[DeamonHelper.createTransferSignature()] Hash', hash);
+            logger.debug('[DeamonHelper.createTransferSignature()] privateKey', from.privateKey);
 
             return web3.eth.accounts.sign(hash, from.privateKey);
           })
           .then(function(r) {
-            signature = r;
+            signature = r.signature;
+            logger.debug('[DeamonHelper.createTransferSignature()] Signature', signature);
+
             return {
               contractAddress: contractAddress,
               to: to,
               amount: amount,
               fee: fee,
               nonce: nonce,
-              signature: signature.signature
+              signature: signature
             };
           })
           .then(resolve)
