@@ -255,7 +255,12 @@ module.exports = function(dependencies) {
             return modelParser.clear(transactionRequest);
           })
           .then(resolve)
-          .catch(reject);
+          .catch(function(e) {
+            reject({
+              status: 500,
+              e: e.message
+            });
+          });
       });
     },
 
