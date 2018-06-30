@@ -143,7 +143,15 @@ module.exports = function(dependencies) {
                                         privateKey, 'hex');
             tx.sign(privKey);
             var serializedTx = tx.serialize();
-            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+            return new Promise(function(resolve, reject) {
+              var transaction = web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+
+              transaction.on('transactionHash', function(hash) {
+                resolve({transactionHash: hash});
+              });
+
+              transaction.on('error', reject);
+            });
           })
           .then(resolve)
           .catch(reject);
@@ -167,7 +175,15 @@ module.exports = function(dependencies) {
             tx.sign(privKey);
             var serializedTx = tx.serialize();
 
-            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+            return new Promise(function(resolve, reject) {
+              var transaction = web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+
+              transaction.on('transactionHash', function(hash) {
+                resolve({transactionHash: hash});
+              });
+
+              transaction.on('error', reject);
+            });
           })
           .then(resolve)
           .catch(reject);
@@ -191,7 +207,15 @@ module.exports = function(dependencies) {
             tx.sign(privKey);
             var serializedTx = tx.serialize();
 
-            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+            return new Promise(function(resolve, reject) {
+              var transaction = web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+
+              transaction.on('transactionHash', function(hash) {
+                resolve({transactionHash: hash});
+              });
+
+              transaction.on('error', reject);
+            });
           })
           .then(resolve)
           .catch(reject);
@@ -215,7 +239,15 @@ module.exports = function(dependencies) {
             tx.sign(privKey);
             var serializedTx = tx.serialize();
 
-            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+            return new Promise(function(resolve, reject) {
+              var transaction = web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+
+              transaction.on('transactionHash', function(hash) {
+                resolve({transactionHash: hash});
+              });
+
+              transaction.on('error', reject);
+            });
           })
           .then(resolve)
           .catch(reject);
@@ -240,7 +272,15 @@ module.exports = function(dependencies) {
             tx.sign(privKey);
             var serializedTx = tx.serialize();
 
-            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+            return new Promise(function(resolve, reject) {
+              var transaction = web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+
+              transaction.on('transactionHash', function(hash) {
+                resolve({transactionHash: hash});
+              });
+
+              transaction.on('error', reject);
+            });
           })
           .then(resolve)
           .catch(reject);
