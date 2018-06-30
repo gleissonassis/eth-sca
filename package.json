@@ -8,8 +8,9 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "ETH": "DB_NAME=eth-cdal PORT=7000 DAEMON_BASE_URL=https://ropsten.infura.io node src/server.js",
-    "ETC": "DB_NAME=etc-cdal PORT=7001 DAEMON_BASE_URL=http://localhost:30304 node src/server.js",
+    "GANACHE": "DB_NAME=eth-cdal-ganache  DAEMON_BASE_URL=http://localhost:7545 node src/server.js",
+    "ROPSTEN": "DB_NAME=eth-cdal-ropsten DAEMON_BASE_URL=https://ropsten.infura.io node src/server.js",
+    "MORDEN": "DB_NAME=etc-cdal-morden DAEMON_BASE_URL=http://35.237.10.166:8545 node src/server.js",
     "test": "NODE_ENV=test istanbul cover --reporter=html ./node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {

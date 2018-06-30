@@ -1,5 +1,6 @@
 var Promise         = require('promise');
 var logger          = require('../config/logger');
+var settings        = require('../config/settings');
 var Decimal         = require('decimal.js');
 
 module.exports = function(dependencies) {
@@ -161,11 +162,10 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         var chain = mutexHelper.lock('transaction/' + entity.from);
         var unlock = null;
-        var transactionRequest = entity;
+        var transactionRequest = Object.assign({}, entity);
         var estimatedGas = 0;
         var gasPrice = 0;
         var address = null;
-        var ethTransaction = daemonHelper.generateTransaction(entity);
         var amountToCheck = 0;
 
         return chain
@@ -175,10 +175,13 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             address = r;
+            var ethTransaction = daemonHelper.generateTransaction(entity);
+
             logger.info('[TransactionBO.save()] Estimating the fee', JSON.stringify(ethTransaction));
+
             return daemonHelper.estimateGas(ethTransaction)
               .then(function(r) {
-                estimatedGas = r;
+                estimatedGas = r > settings.daemonSettings.gasLimit ? settings.daemonSettings.gasLimit : r;
                 return daemonHelper.getGasPrice();
               })
               .then(function(r) {
@@ -187,8 +190,10 @@ module.exports = function(dependencies) {
               });
           })
           .then(function(r) {
-            ethTransaction.gas = estimatedGas;
-            logger.info('[TransactionBO.save()] Estimated fee', r);
+
+            logger.debug('[TransactionBO.save()] Estimated gasPrice', gasPrice);
+            logger.debug('[TransactionBO.save()] Estimated estimatedGas', estimatedGas);
+            logger.debug('[TransactionBO.save()] Estimated fee', r);
             amountToCheck = new Decimal(r).plus(entity.amount).toNumber();
             return addressBO.checkHasFunds(entity.from, amountToCheck);
           })
@@ -210,8 +215,13 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             transactionRequest._id = r._id;
-            logger.info('[TransactionBO] Sending the transaction to the blockchain', JSON.stringify(transactionRequest), JSON.stringify(ethTransaction));
-            return daemonHelper.sendTransaction(ethTransaction, address.privateKey);
+
+            var tmpTransaction = Object.assign({}, entity);
+            tmpTransaction.gasPrice = gasPrice;
+            tmpTransaction.gasLimit = estimatedGas;
+
+            logger.debug('[TransactionBO] Sending the transaction to the blockchain', JSON.stringify(tmpTransaction));
+            return daemonHelper.sendTransaction(tmpTransaction, address.privateKey);
           })
           .then(function(r) {
             logger.debug('[TransactionBO] Return of blockchain', JSON.stringify(r));

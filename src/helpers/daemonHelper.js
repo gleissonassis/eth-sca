@@ -113,6 +113,8 @@ module.exports = function(dependencies) {
         switch (transaction.token.method.name) {
           case 'mint':
             return this.sendMintTransaction(transaction, privateKey);
+          case 'transferPreSigned':
+            return this.sendTransferPreSignedTransaction(transaction, privateKey);
           case 'transfer':
             return this.sendMintTransaction(transaction, privateKey);
           default:
@@ -129,6 +131,21 @@ module.exports = function(dependencies) {
 
         return chain
           .then(function() {
+            return web3.eth.getTransactionCount(transaction.from);
+          })
+          .then(function(count) {
+            transaction.nonce = count;
+            var tx = new Tx(transaction);
+            var privKey = new Buffer(privateKey.startsWith('0x') ?
+                                        privateKey.substring(2) :
+                                        privateKey, 'hex');
+            tx.sign(privKey);
+            var serializedTx = tx.serialize();
+            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+          })
+          .then(resolve)
+          .catch(reject);
+          /*.then(function() {
             return web3.eth.accounts.wallet.add(privateKey);
           })
           .then(function(r) {
@@ -139,11 +156,12 @@ module.exports = function(dependencies) {
             }
           })
           .then(resolve)
-          .catch(reject);
+          .catch(reject);*/
       });
     },
 
-    sendMintTransaction: function(transaction, privateKey) {
+    sendTransferPreSignedTransaction: function(transaction, privateKey) {
+      var self = this;
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -152,7 +170,31 @@ module.exports = function(dependencies) {
             return web3.eth.getTransactionCount(transaction.from);
           })
           .then(function(count) {
-            var tx = new Tx(this.generateMintTransaction(transaction, count));
+            var tx = new Tx(self.generateTransferPreSignedTransaction(transaction, count));
+            var privKey = new Buffer(privateKey.startsWith('0x') ?
+                                        privateKey.substring(2) :
+                                        privateKey, 'hex');
+            tx.sign(privKey);
+            var serializedTx = tx.serialize();
+
+            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    sendMintTransaction: function(transaction, privateKey) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            return web3.eth.getTransactionCount(transaction.from);
+          })
+          .then(function(count) {
+            var tx = new Tx(self.generateMintTransaction(transaction, count));
             var privKey = new Buffer(privateKey.startsWith('0x') ?
                                         privateKey.substring(2) :
                                         privateKey, 'hex');
@@ -167,6 +209,8 @@ module.exports = function(dependencies) {
     },
 
     sendTransferTransaction: function(transaction, privateKey) {
+      var self = this;
+
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -175,7 +219,7 @@ module.exports = function(dependencies) {
             return web3.eth.getTransactionCount(transaction.from);
           })
           .then(function(count) {
-            var tx = new Tx(this.generateMintTransaction(transaction, count));
+            var tx = new Tx(self.generateTransferTransaction(transaction, count));
             var privKey = new Buffer(privateKey.startsWith('0x') ?
                                         privateKey.substring(2) :
                                         privateKey, 'hex');
@@ -190,7 +234,6 @@ module.exports = function(dependencies) {
     },
 
     generateTransaction: function(transaction) {
-      console.log(transaction);
       if (transaction.token) {
         switch (transaction.token.method.name) {
           case 'mint':
@@ -219,11 +262,11 @@ module.exports = function(dependencies) {
 
     generateMintTransaction: function(transaction, count) {
       var token = new web3.eth.Contract(mintableTokenInterface.abi, transaction.token.contractAddress);
-      var gasLimit = 3000000;
       return {
             from: transaction.from,
             nonce: web3.utils.toHex(count),
-            gasLimit: web3.utils.toHex(gasLimit),
+            gasLimit: web3.utils.toHex(transaction.gasLimit),
+            gasPrice: web3.utils.toHex(transaction.gasPrice),
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.mint(transaction.token.method.params.to, transaction.token.method.params.amount).encodeABI(),
@@ -232,11 +275,11 @@ module.exports = function(dependencies) {
 
     generateTransferTransaction: function(transaction, count) {
       var token = new web3.eth.Contract(erc20Interface.abi, transaction.token.contractAddress);
-      var gasLimit = 3000000;
       return {
             from: transaction.from,
             nonce: web3.utils.toHex(count),
-            gasLimit: web3.utils.toHex(gasLimit),
+            gasLimit: web3.utils.toHex(transaction.gasLimit),
+            gasPrice: web3.utils.toHex(transaction.gasPrice),
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.transfer(transaction.token.method.params.to, transaction.token.method.params.amount).encodeABI(),
@@ -245,11 +288,11 @@ module.exports = function(dependencies) {
 
     generateTransferPreSignedTransaction: function(transaction, count) {
       var token = new web3.eth.Contract(erc865Interface.abi, transaction.token.contractAddress);
-      var gasLimit = 3000000;
       return {
             from: transaction.from,
             nonce: web3.utils.toHex(count),
-            gasLimit: web3.utils.toHex(gasLimit),
+            gasLimit: web3.utils.toHex(transaction.gasLimit),
+            gasPrice: web3.utils.toHex(transaction.gasPrice),
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.transferPreSigned(transaction.token.method.params.signature,
@@ -262,11 +305,11 @@ module.exports = function(dependencies) {
 
     generateBurnPreSignedTransaction: function(transaction, count) {
       var token = new web3.eth.Contract(erc865Interface.abi, transaction.token.contractAddress);
-      var gasLimit = 3000000;
       return {
             from: transaction.from,
             nonce: web3.utils.toHex(count),
-            gasLimit: web3.utils.toHex(gasLimit),
+            gasLimit: web3.utils.toHex(transaction.gasLimit),
+            gasPrice: transaction.gasPrice,
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.burnPreSigned(transaction.token.method.params.signature,

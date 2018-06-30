@@ -24,8 +24,10 @@ module.exports = {
 
     daemonSettings: {
       previousBlocksToCheck: 100,
+      gasLimit: process.env.DAEMON_GAS_LIMIT ||4712388,
       //baseUrl: process.env.DAEMON_BASE_URL || 'https://ropsten.infura.io',
-      baseUrl: process.env.DAEMON_BASE_URL || 'https://ropsten.infura.io/q4jm34Psz0hLbGQAfZjs',
+      //baseUrl: process.env.DAEMON_BASE_URL || 'https://ropsten.infura.io/q4jm34Psz0hLbGQAfZjs',
       //baseUrl: process.env.DAEMON_BASE_URL || 'http://localhost:7545',
+      baseUrl: process.env.DAEMON_BASE_URL || 'http://localhost:8545',
     }
   };
