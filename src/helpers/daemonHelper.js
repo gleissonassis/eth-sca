@@ -115,6 +115,8 @@ module.exports = function(dependencies) {
             return this.sendMintTransaction(transaction, privateKey);
           case 'transferPreSigned':
             return this.sendTransferPreSignedTransaction(transaction, privateKey);
+          case 'burnPreSigned':
+            return this.sendBurnPreSignedTransaction(transaction, privateKey);
           case 'transfer':
             return this.sendMintTransaction(transaction, privateKey);
           default:
@@ -145,18 +147,6 @@ module.exports = function(dependencies) {
           })
           .then(resolve)
           .catch(reject);
-          /*.then(function() {
-            return web3.eth.accounts.wallet.add(privateKey);
-          })
-          .then(function(r) {
-            if (r) {
-              return web3.eth.sendTransaction(transaction);
-            } else {
-              return false;
-            }
-          })
-          .then(resolve)
-          .catch(reject);*/
       });
     },
 
@@ -171,6 +161,30 @@ module.exports = function(dependencies) {
           })
           .then(function(count) {
             var tx = new Tx(self.generateTransferPreSignedTransaction(transaction, count));
+            var privKey = new Buffer(privateKey.startsWith('0x') ?
+                                        privateKey.substring(2) :
+                                        privateKey, 'hex');
+            tx.sign(privKey);
+            var serializedTx = tx.serialize();
+
+            return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    sendBurnPreSignedTransaction: function(transaction, privateKey) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            return web3.eth.getTransactionCount(transaction.from);
+          })
+          .then(function(count) {
+            var tx = new Tx(self.generateBurnPreSignedTransaction(transaction, count));
             var privKey = new Buffer(privateKey.startsWith('0x') ?
                                         privateKey.substring(2) :
                                         privateKey, 'hex');
@@ -309,7 +323,7 @@ module.exports = function(dependencies) {
             from: transaction.from,
             nonce: web3.utils.toHex(count),
             gasLimit: web3.utils.toHex(transaction.gasLimit),
-            gasPrice: transaction.gasPrice,
+            gasPrice: web3.utils.toHex(transaction.gasPrice),
             to: transaction.token.contractAddress,
             value: '0x0',
             data: token.methods.burnPreSigned(transaction.token.method.params.signature,
@@ -414,7 +428,6 @@ module.exports = function(dependencies) {
           .then(function(r) {
             hash = r;
             logger.debug('[DeamonHelper.createTransferSignature()] Hash', hash);
-            logger.debug('[DeamonHelper.createTransferSignature()] privateKey', from.privateKey);
 
             return web3.eth.accounts.sign(hash, from.privateKey);
           })
@@ -436,11 +449,11 @@ module.exports = function(dependencies) {
       });
     },
 
-    burnTransferSignature: function(contractAddress, from, amount, fee, nonce) {
+    createBurnSignature: function(contractAddress, from, amount, fee, nonce) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
-        logger.debug('[DeamonHelper.burnTransferSignature()] Instantiating the contract by address ', contractAddress);
+        logger.debug('[DeamonHelper.createBurnSignature()] Instantiating the contract by address ', contractAddress);
         var token = new web3.eth.Contract(fullTokenInterface.abi, contractAddress);
 
         var hash = null;
@@ -448,7 +461,7 @@ module.exports = function(dependencies) {
 
         return chain
           .then(function() {
-            logger.debug('[DeamonHelper.burnTransferSignature()] Signing the transfer ',
+            logger.debug('[DeamonHelper.createBurnSignature()] Signing the transfer ',
                           contractAddress,
                           amount,
                           fee,
@@ -462,14 +475,13 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             hash = r;
-            logger.debug('[DeamonHelper.burnTransferSignature()] Hash', hash);
-            logger.debug('[DeamonHelper.burnTransferSignature()] privateKey', from.privateKey);
+            logger.debug('[DeamonHelper.createBurnSignature()] Hash', hash);
 
             return web3.eth.accounts.sign(hash, from.privateKey);
           })
           .then(function(r) {
             signature = r.signature;
-            logger.debug('[DeamonHelper.burnTransferSignature()] Signature', signature);
+            logger.debug('[DeamonHelper.createBurnSignature()] Signature', signature);
 
             return {
               contractAddress: contractAddress,

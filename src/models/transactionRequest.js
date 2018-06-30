@@ -23,7 +23,7 @@ module.exports = function(){
     },
     to: {
       type: String,
-      required: true
+      required: false
     },
     amount: {
       type: Number,

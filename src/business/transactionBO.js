@@ -268,7 +268,8 @@ module.exports = function(dependencies) {
           .catch(function(e) {
             reject({
               status: 500,
-              e: e.message
+              error: 'SEND_UNKNOW_ERROR',
+              details: e.message
             });
           });
       });
@@ -617,7 +618,7 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             nonce = r;
-            return daemonHelper.burnTransferSignature(contractAddress, from, amount, fee, nonce);
+            return daemonHelper.createBurnSignature(contractAddress, from, amount, fee, nonce);
           })
           .then(resolve)
           .catch(reject);
