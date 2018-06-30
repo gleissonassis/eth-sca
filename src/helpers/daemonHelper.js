@@ -498,7 +498,7 @@ module.exports = function(dependencies) {
 
     parseTokenTransferMethod: function(decoded) {
       var r = {
-        method: 'mint',
+        method: 'transfer',
         params: {
           to: '',
           amount: 0
