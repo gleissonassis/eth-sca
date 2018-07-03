@@ -1,15 +1,8 @@
 var BOFactory             = require('../../business/boFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
-var AAPMSWorker           = require('../../workers/aapmsWorker');
 
 module.exports = function() {
   var business = BOFactory.getBO('address');
-  var configurationBO = BOFactory.getBO('configuration');
-
-  var aapmsWorker = new AAPMSWorker({
-    addressBO: business,
-    configurationBO: configurationBO
-  });
 
   return {
     getAll: function(req, res) {
@@ -44,10 +37,6 @@ module.exports = function() {
       business.createAddress(req.params.ownerId, req.body.contractAddress)
         .then(function(r) {
           rh.created(r);
-
-          //this process will occurs in a diferent thread, just to maintain the
-          //the pool with a good amount of availabe addresses
-          aapmsWorker.run();
         })
         .catch(rh.error);
     },

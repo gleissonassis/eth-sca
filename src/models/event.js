@@ -5,53 +5,53 @@ var model = null;
 
 module.exports = function(){
   var schema = mongooseSchema({
-    ownerId: {
+    address: {
       type: String,
-      required: false,
+      required: true
     },
-    ownerTransactionId: {
+    blockHash: {
       type: String,
-      required: false,
+      required: true
     },
     transactionHash: {
       type: String,
-      required: false
+      required: true
     },
-    from: {
+    blockNumber: {
+      type: Number,
+      required: true
+    },
+    returnValues: {
+      type: Object,
+      required: true
+    },
+    eventName: {
       type: String,
-      required: true
+      required: true,
     },
-    to: {
+    signature: {
       type: String,
-      required: false
+      required: true,
     },
-    amount: {
+    timestamp: {
       type: Number,
       required: true
     },
-    gas: {
-      type: Number,
+    date: {
+      type: Date,
       required: true
-    },
-    status: {
-      type: Number,
-      required: false
-    },
-    fee: {
-      type: Number,
-      required: false
     },
     createdAt: {
       type: Date,
       required: false,
     },
-    updatedAt: {
-      type: Date,
-      required: false,
+    eventId: {
+      type: String,
+      required: true
     }
   });
 
-  model = model ? model : mongoose.model('transactionRequests', schema);
+  model = model ? model : mongoose.model('events', schema);
 
   return model;
 };

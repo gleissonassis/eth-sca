@@ -17,11 +17,11 @@ module.exports = function(dependencies) {
 
         chain
           .then(function() {
-            logger.info('[AddressBO] Clearing the database');
+            logger.debug('[AddressBO] Clearing the database');
             return addressDAO.clear();
           })
           .then(function() {
-            logger.info('[AddressBO] The database has been cleared');
+            logger.debug('[AddressBO] The database has been cleared');
           })
           .then(resolve)
           .catch(reject);
@@ -36,10 +36,10 @@ module.exports = function(dependencies) {
 
         filter.isEnabled = true;
 
-        logger.info('[AddressBO] Listing all addresses by filter ', JSON.stringify(filter));
+        logger.debug('[AddressBO] Listing all addresses by filter ', JSON.stringify(filter));
         addressDAO.getAll(filter, {}, '+createdAt')
           .then(function(r) {
-            logger.info('[AddressBO] Total of addresses', r.length);
+            logger.debug('[AddressBO] Total of addresses', r.length);
             return r.map(function(item) {
               return modelParser.clear(item);
             });
@@ -50,12 +50,12 @@ module.exports = function(dependencies) {
     },
 
     getContractAddresses: function() {
-      logger.info('[AddressBO] Getting contract addresses from database');
+      logger.debug('[AddressBO] Getting contract addresses from database');
       return addressDAO.getContractAddresses();
     },
 
     getFreeAddresses: function() {
-      logger.info('[AddressBO] Getting free addresses from database');
+      logger.debug('[AddressBO] Getting free addresses from database');
       return this.getAll({
         isEnabled: true,
         ownerId: null

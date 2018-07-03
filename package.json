@@ -1,28 +1,28 @@
 {
-  "name": "eth-cdal",
+  "name": "eth-sca",
   "version": "0.0.1",
-  "description": "CDAL is an abstraction layer for a Ethereum daemon",
+  "description": "SCA is a Smart Contract Analyzer",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "start": "node src/server.js",
-    "GANACHE": "DB_NAME=eth-cdal-ganache  DAEMON_BASE_URL=http://localhost:7545 node src/server.js",
-    "ROPSTEN": "DB_NAME=eth-cdal-ropsten DAEMON_BASE_URL=https://ropsten.infura.io node src/server.js",
-    "MORDEN": "DB_NAME=etc-cdal-morden DAEMON_BASE_URL=http://35.237.10.166:8545 node src/server.js",
+    "GANACHE": "DB_NAME=eth-sca-ganache  DAEMON_BASE_URL=http://localhost:7545 node src/server.js",
+    "ROPSTEN": "DB_NAME=eth-sca-ropsten DAEMON_BASE_URL=https://ropsten.infura.io node src/server.js",
+    "MORDEN": "DB_NAME=eth-sca-morden DAEMON_BASE_URL=http://35.237.10.166:8545 node src/server.js",
     "test": "NODE_ENV=test istanbul cover --reporter=html ./node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gleissonassis/eth-cdal.git"
+    "url": "git+https://github.com/gleissonassis/eth-sca.git"
   },
   "author": "Gleisson de Assis <gleisson.assis@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gleissonassis/eth-cdal/issues"
+    "url": "https://github.com/gleissonassis/eth-sca/issues"
   },
-  "homepage": "https://github.com/gleissonassis/eth-cdal#readme",
+  "homepage": "https://github.com/gleissonassis/eth-sca#readme",
   "devDependencies": {
     "chai": "^4.1.2",
     "eslint": "^4.6.1",
@@ -41,15 +41,11 @@
     "ethereumjs-tx": "^1.3.4",
     "express": "^4.15.5",
     "express-load": "^1.1.16",
-    "human-standard-token-abi": "^1.0.2",
-    "jsonwebtoken": "^8.1.0",
     "method-override": "^2.3.9",
     "mongo-dot-notation": "^1.2.0",
     "mongodb": "^2.2.31",
     "mongoose": "^4.11.13",
     "morgan": "^1.8.2",
-    "node-mutex": "^0.2.2",
-    "nodemailer": "^4.4.2",
     "promise": "^8.0.1",
     "request": "^2.83.0",
     "supertest": "^3.0.0",

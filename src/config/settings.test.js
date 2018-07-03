@@ -1,16 +1,15 @@
 module.exports = {
-    mongoUrl : 'mongodb://localhost/eth-services-test',
-    servicePort : 4100,
-    isMongoDebug : true,
+  mongoUrl : util.format('mongodb://%s/%s',
+                    process.env.DB_SERVER || 'localhost',
+                    process.env.DB_NAME   || 'eth-sca-test'),
+  servicePort : process.env.PORT || 4001,
+  isMongoDebug : true,
 
-    defaultSettings: {
-      minimumConfirmations: 3,
-      minimumAddressPoolSize: 10,
-      transactionNotificationAPI: 'http://localhost:3001/v1/transactions/notifications',
-    },
+  defaultSettings: {
+    currentBlockNumber: 1000
+  },
 
-    daemonSettings: {
-      previousBlocksToCheck: 12,
-      baseUrl: 'http://localhost:7545',
-    }
+  daemonSettings: {
+    baseUrl: process.env.DAEMON_BASE_URL || 'http://localhost:8545',
+  }
 };

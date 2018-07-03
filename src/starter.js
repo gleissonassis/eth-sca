@@ -8,15 +8,11 @@ module.exports = function() {
     runWorkers: function() {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
-        var bosWorker = WorkerFactory.getWorker('bos');
-        var aapmsWorker = WorkerFactory.getWorker('aapms');
-        var tnsWorker = WorkerFactory.getWorker('tns');
+        var scaWorker = WorkerFactory.getWorker('sca');
 
         chain
           .then(function() {
-            aapmsWorker.run();
-            tnsWorker.run();
-            bosWorker.run();
+            scaWorker.run();
           })
           .then(resolve)
           .catch(reject);

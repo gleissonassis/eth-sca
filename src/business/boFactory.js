@@ -1,12 +1,19 @@
 var TransactionBO               = require('./transactionBO');
 var AddressBO                   = require('./addressBO');
 var ConfigurationBO             = require('./configurationBO');
+var EventBO                     = require('./eventBO');
 var DAOFactory                  = require('../daos/daoFactory');
 var ModelParser                 = require('../models/modelParser');
 var HelperFactory               = require('../helpers/helperFactory');
 
 function factory(dao) {
   switch (dao) {
+    case 'event':
+      return new EventBO({
+        eventDAO: DAOFactory.getDAO('event'),
+        modelParser: new ModelParser(),
+        dateHelper: HelperFactory.getHelper('date')
+      });
     case 'configuration':
       return new ConfigurationBO({
         configurationDAO: DAOFactory.getDAO('configuration'),
@@ -15,16 +22,9 @@ function factory(dao) {
       });
     case 'transaction':
       return new TransactionBO({
-        addressBO: factory('address'),
-        configurationBO: factory('configuration'),
-        addressDAO: DAOFactory.getDAO('address'),
         transactionDAO: DAOFactory.getDAO('transaction'),
-        transactionRequestDAO: DAOFactory.getDAO('transactionRequest'),
-        blockchainTransactionDAO: DAOFactory.getDAO('blockchainTransaction'),
         modelParser: new ModelParser(),
-        daemonHelper: HelperFactory.getHelper('daemon'),
         dateHelper: HelperFactory.getHelper('date'),
-        mutexHelper: HelperFactory.getHelper('mutex')
       });
     case 'address':
       return new AddressBO({

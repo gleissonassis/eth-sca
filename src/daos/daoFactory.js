@@ -1,18 +1,15 @@
 var ConfigurationDAO            = require('./configurationDAO');
+var EventDAO                    = require('./eventDAO');
 var AddressDAO                  = require('./addressDAO');
 var TransactionDAO              = require('./transactionDAO');
-var TransactionRequestDAO       = require('./transactionRequestDAO');
-var BlockchainTransactionDAO    = require('./blockchainTransactionDAO');
 
 module.exports = {
   getDAO: function(dao) {
     switch (dao) {
+      case 'event':
+        return new EventDAO();
       case 'transaction':
         return new TransactionDAO();
-      case 'transactionRequest':
-        return new TransactionRequestDAO();
-      case 'blockchainTransaction':
-        return new BlockchainTransactionDAO();
       case 'address':
         return new AddressDAO();
       case 'configuration':

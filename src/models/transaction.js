@@ -5,53 +5,15 @@ var model = null;
 
 module.exports = function(){
   var schema = mongooseSchema({
-    ownerId: {
+    blockHash: {
       type: String,
-      required: false,
+      required: true
     },
-    ownerTransactionId: {
-      type: String,
-      required: false,
-    },
-    amount: {
+    blockNumber: {
       type: Number,
       required: true
     },
-    gas: {
-      type: Number,
-      required: true
-    },
-    gasPrice: {
-      type: Number,
-      required: true
-    },
-    isConfirmed: {
-      type: Boolean,
-      required: true
-    },
-    notifications: {
-      creation: {
-        isNotified: {
-          type: Boolean,
-          required: true
-        },
-        notifiedAt: {
-          type: Date,
-          required: false
-        },
-      },
-      confirmation: {
-        isNotified: {
-          type: Boolean,
-          required: true
-        },
-        notifiedAt: {
-          type: Date,
-          required: false
-        },
-      }
-    },
-    transactionHash: {
+    from: {
       type: String,
       required: true
     },
@@ -59,7 +21,19 @@ module.exports = function(){
       type: String,
       required: false
     },
-    from: {
+    value: {
+      type: Number,
+      required: true,
+    },
+    gas: {
+      type: Number,
+      required: true,
+    },
+    gasPrice: {
+      type: Number,
+      required: true,
+    },
+    hash: {
       type: String,
       required: true
     },
@@ -67,15 +41,23 @@ module.exports = function(){
       type: String,
       required: false
     },
-    parsedInput: {
-      type: Object,
-      required: false
+    nonce: {
+      type: Number,
+      required: true
+    },
+    transactionIndex: {
+      type: Number,
+      required: true
+    },
+    timestamp: {
+      type: Number,
+      required: true
+    },
+    date: {
+      type: Date,
+      required: true
     },
     createdAt: {
-      type: Date,
-      required: false,
-    },
-    updatedAt: {
       type: Date,
       required: false,
     }

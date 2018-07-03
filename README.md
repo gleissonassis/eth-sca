@@ -1,4 +1,3 @@
-# bitcoin-cdal
-![Build Status](https://travis-ci.org/gleissonassis/bitcoin-cdal.svg?branch=master)
+# eth-sca
 
-The main repository for Coin Daemon Abstraction Layer
+The main repository for Ethereum Smart Contract Analyzer
